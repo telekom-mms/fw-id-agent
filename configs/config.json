@@ -1,0 +1,16 @@
+{
+	"ServiceURL":"https://myservice.mycompany.com:443",
+	"Realm": "MYKERBEROSREALM.COM",
+	"TND":{
+		"HTTPSServers":[
+			{
+				"URL":"https://tnd1.mycompany.com:443",
+				"Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
+			},
+			{
+				"URL":"https://tnd2.mycompany.com:443",
+				"Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
+			}
+		]
+	}
+}

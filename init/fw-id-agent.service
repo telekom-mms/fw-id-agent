@@ -1,0 +1,9 @@
+[Unit]
+Description=Firewall Identity Agent
+
+[Service]
+ExecStart=/usr/bin/fw-id-agent -config /etc/fw-id-agent.json
+KillSignal=SIGINT
+
+[Install]
+WantedBy=default.target
