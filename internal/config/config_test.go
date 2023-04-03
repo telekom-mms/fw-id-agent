@@ -32,6 +32,9 @@ func TestLoad(t *testing.T) {
 	content := `{
         "ServiceURL":"https://myservice.mycompany.com:443",
         "Realm": "MYKERBEROSREALM.COM",
+	"KeepAlive": 300,
+	"Timeout": 30,
+	"RetryTimer": 15,
         "TND":{
                 "HTTPSServers":[
                         {
@@ -44,6 +47,7 @@ func TestLoad(t *testing.T) {
                         }
                 ]
         },
+	"Verbose": true,
 	"MinUserID": 1000,
 	"StartDelay": 20
 }`
@@ -65,6 +69,9 @@ func TestLoad(t *testing.T) {
 	want := &Config{
 		ServiceURL: "https://myservice.mycompany.com:443",
 		Realm:      "MYKERBEROSREALM.COM",
+		KeepAlive:  300,
+		Timeout:    30,
+		RetryTimer: 15,
 		TND: TNDConfig{
 			[]TNDHTTPSConfig{
 				{
@@ -77,6 +84,7 @@ func TestLoad(t *testing.T) {
 				},
 			},
 		},
+		Verbose:    true,
 		MinUserID:  1000,
 		StartDelay: 20,
 	}
