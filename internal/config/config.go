@@ -24,6 +24,7 @@ type Config struct {
 	Realm      string
 	KeepAlive  int
 	Timeout    int
+	RetryTimer int
 	TND        TNDConfig
 	MinUserID  int
 	StartDelay int
