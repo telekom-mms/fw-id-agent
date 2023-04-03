@@ -22,6 +22,7 @@ type TNDConfig struct {
 type Config struct {
 	ServiceURL string
 	Realm      string
+	KeepAlive  int
 	TND        TNDConfig
 	MinUserID  int
 	StartDelay int
