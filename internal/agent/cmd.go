@@ -13,12 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// startDelay is the time the agent sleeps before starting in seconds
-	// TODO: move this to config?
-	startDelay = 20
-)
-
 var (
 	// version is the agent version, to be set at compile time
 	version = "unknown"
@@ -64,8 +58,8 @@ func Run() {
 
 	// give the user's desktop environment some time to start after login,
 	// so we do not miss notifications
-	log.WithField("seconds", startDelay).Debug("Agent sleeping before starting")
-	time.Sleep(startDelay * time.Second)
+	log.WithField("seconds", cfg.StartDelay).Debug("Agent sleeping before starting")
+	time.Sleep(time.Duration(cfg.StartDelay) * time.Second)
 
 	// start agent
 	log.Debug("Agent starting")

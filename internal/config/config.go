@@ -24,6 +24,7 @@ type Config struct {
 	Realm      string
 	TND        TNDConfig
 	MinUserID  int
+	StartDelay int
 }
 
 // Load loads the json configuration from file path
