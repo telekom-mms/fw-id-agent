@@ -14,10 +14,6 @@ import (
 )
 
 const (
-	// minUserID is the minimum allowed user ID
-	// TODO: move this to config?
-	minUserID = 1000
-
 	// startDelay is the time the agent sleeps before starting in seconds
 	// TODO: move this to config?
 	startDelay = 20
@@ -62,7 +58,7 @@ func Run() {
 	if err != nil {
 		log.WithError(err).Fatal("Agent started with invalid user id")
 	}
-	if uid < minUserID {
+	if uid < cfg.MinUserID {
 		log.Fatal("Agent started with user id lower than minimum allowed user id")
 	}
 

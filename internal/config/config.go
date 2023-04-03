@@ -23,6 +23,7 @@ type Config struct {
 	ServiceURL string
 	Realm      string
 	TND        TNDConfig
+	MinUserID  int
 }
 
 // Load loads the json configuration from file path
