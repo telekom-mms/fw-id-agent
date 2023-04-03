@@ -26,6 +26,7 @@ type Config struct {
 	Timeout    int
 	RetryTimer int
 	TND        TNDConfig
+	Verbose    bool
 	MinUserID  int
 	StartDelay int
 }
