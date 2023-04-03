@@ -43,7 +43,9 @@ func TestLoad(t *testing.T) {
                                 "Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
                         }
                 ]
-        }
+        },
+	"MinUserID": 1000,
+	"StartDelay": 20
 }`
 	valid, err := ioutil.TempFile("", "fw-id-agent-config-test")
 	if err != nil {
@@ -75,8 +77,10 @@ func TestLoad(t *testing.T) {
 				},
 			},
 		},
+		MinUserID:  1000,
+		StartDelay: 20,
 	}
 	if !reflect.DeepEqual(want, cfg) {
-		t.Errorf("got %s, want %s", cfg, want)
+		t.Errorf("got %v, want %v", cfg, want)
 	}
 }
