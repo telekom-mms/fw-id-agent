@@ -39,6 +39,16 @@ func TestConfigGetRetryTimer(t *testing.T) {
 	}
 }
 
+// TestConfigGetStartDelay tests GetStartDelay of Config
+func TestConfigGetStartDelay(t *testing.T) {
+	config := &Config{StartDelay: 20}
+	want := 20 * time.Second
+	got := config.GetStartDelay()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 // TestConfigValid tests Valid of Config
 func TestConfigValid(t *testing.T) {
 	// invalid

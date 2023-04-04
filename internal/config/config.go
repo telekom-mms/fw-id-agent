@@ -77,6 +77,11 @@ func (c *Config) GetRetryTimer() time.Duration {
 	return time.Duration(c.RetryTimer) * time.Second
 }
 
+// GetStartDelay returns the agent start delay as Duration
+func (c *Config) GetStartDelay() time.Duration {
+	return time.Duration(c.StartDelay) * time.Second
+}
+
 // Valid returns whether Config is valid
 func (c *Config) Valid() bool {
 	if c == nil ||

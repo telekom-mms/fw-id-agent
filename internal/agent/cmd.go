@@ -80,7 +80,7 @@ func Run() {
 	// give the user's desktop environment some time to start after login,
 	// so we do not miss notifications
 	log.WithField("seconds", cfg.StartDelay).Debug("Agent sleeping before starting")
-	time.Sleep(time.Duration(cfg.StartDelay) * time.Second)
+	time.Sleep(cfg.GetStartDelay())
 
 	// start agent
 	log.Debug("Agent starting")
