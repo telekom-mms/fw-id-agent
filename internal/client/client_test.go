@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
 )
 
 func TestLogin(t *testing.T) {
@@ -12,8 +14,8 @@ func TestLogin(t *testing.T) {
 	server := initTestServer(expected)
 	defer server.Close()
 
-	client := NewClient()
-	client.SetURL(server.URL)
+	config := &config.Config{ServiceURL: server.URL}
+	client := NewClient(config)
 	go func() {
 		defer close(client.results)
 		err := client.login()
@@ -35,8 +37,8 @@ func TestLoginNoResult(t *testing.T) {
 	server := initTestServer(expected)
 	defer server.Close()
 
-	client := NewClient()
-	client.SetURL(server.URL)
+	config := &config.Config{ServiceURL: server.URL}
+	client := NewClient(config)
 	go func() {
 		defer close(client.results)
 		_ = client.login()
@@ -56,8 +58,8 @@ func TestLoginFailed(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient()
-	client.SetURL(server.URL)
+	config := &config.Config{ServiceURL: server.URL}
+	client := NewClient(config)
 	go func() {
 		defer close(client.results)
 		err := client.login()
@@ -79,8 +81,8 @@ func TestLogout(t *testing.T) {
 	server := initTestServer(expected)
 	defer server.Close()
 
-	client := NewClient()
-	client.SetURL(server.URL)
+	config := &config.Config{ServiceURL: server.URL}
+	client := NewClient(config)
 	go func() {
 		defer close(client.results)
 		_ = client.login()
