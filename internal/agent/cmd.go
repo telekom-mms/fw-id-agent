@@ -49,8 +49,13 @@ func Run() {
 		log.WithError(err).Fatal("Agent could not load config")
 	}
 
+	// overwrite config settings with command line arguments
+	if flagIsSet("verbose") {
+		cfg.Verbose = *verbose
+	}
+
 	// set verbose output
-	if *verbose || !flagIsSet("verbose") && cfg.Verbose {
+	if cfg.Verbose {
 		log.SetLevel(log.DebugLevel)
 	}
 
