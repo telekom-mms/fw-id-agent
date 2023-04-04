@@ -18,6 +18,17 @@ var (
 	version = "unknown"
 )
 
+// flagIsSet returns whether flag with name is set as command line argument
+func flagIsSet(name string) bool {
+	isSet := false
+	flag.Visit(func(f *flag.Flag) {
+		if name == f.Name {
+			isSet = true
+		}
+	})
+	return isSet
+}
+
 // Run is the main entry point
 func Run() {
 	// parse command line arguments
@@ -32,15 +43,15 @@ func Run() {
 		os.Exit(0)
 	}
 
-	// set verbose output
-	if *verbose {
-		log.SetLevel(log.DebugLevel)
-	}
-
 	// load config
 	cfg, err := config.Load(*cfgFile)
 	if err != nil {
 		log.WithError(err).Fatal("Agent could not load config")
+	}
+
+	// set verbose output
+	if *verbose || !flagIsSet("verbose") && cfg.Verbose {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	// check user
