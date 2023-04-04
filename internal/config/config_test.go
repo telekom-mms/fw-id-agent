@@ -69,6 +69,21 @@ func TestConfigValid(t *testing.T) {
 	}
 }
 
+// TestDefault tests Default
+func TestDefault(t *testing.T) {
+	want := &Config{
+		KeepAlive:  5,
+		Timeout:    30,
+		RetryTimer: 15,
+		MinUserID:  1000,
+		StartDelay: 20,
+	}
+	got := Default()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 // TestLoad tests Load
 func TestLoad(t *testing.T) {
 	// test invalid path
@@ -92,7 +107,10 @@ func TestLoad(t *testing.T) {
 	}
 
 	// test valid config file
-	content := `{
+	// - complete config
+	// - partial config with defaults
+	for _, content := range []string{
+		`{
         "ServiceURL":"https://myservice.mycompany.com:443",
         "Realm": "MYKERBEROSREALM.COM",
 	"KeepAlive": 5,
@@ -113,47 +131,67 @@ func TestLoad(t *testing.T) {
 	"Verbose": true,
 	"MinUserID": 1000,
 	"StartDelay": 20
-}`
-	valid, err := ioutil.TempFile("", "fw-id-agent-config-test")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		_ = os.Remove(valid.Name())
-	}()
+}`,
+		`{
+        "ServiceURL":"https://myservice.mycompany.com:443",
+        "Realm": "MYKERBEROSREALM.COM",
+        "TND":{
+                "HTTPSServers":[
+                        {
+                                "URL":"https://tnd1.mycompany.com:443",
+                                "Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
+                        },
+                        {
+                                "URL":"https://tnd2.mycompany.com:443",
+                                "Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
+                        }
+                ]
+        },
+	"Verbose": true
+}`,
+	} {
 
-	if _, err := valid.Write([]byte(content)); err != nil {
-		log.Fatal(err)
-	}
+		valid, err := ioutil.TempFile("", "fw-id-agent-config-test")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer func() {
+			_ = os.Remove(valid.Name())
+		}()
 
-	cfg, err := Load(valid.Name())
-	if cfg == nil {
-		t.Errorf("got nil, want != nil")
-	}
+		if _, err := valid.Write([]byte(content)); err != nil {
+			log.Fatal(err)
+		}
 
-	want := &Config{
-		ServiceURL: "https://myservice.mycompany.com:443",
-		Realm:      "MYKERBEROSREALM.COM",
-		KeepAlive:  5,
-		Timeout:    30,
-		RetryTimer: 15,
-		TND: TNDConfig{
-			[]TNDHTTPSConfig{
-				{
-					URL:  "https://tnd1.mycompany.com:443",
-					Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
-				},
-				{
-					URL:  "https://tnd2.mycompany.com:443",
-					Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+		cfg, err := Load(valid.Name())
+		if cfg == nil {
+			t.Errorf("got nil, want != nil")
+		}
+
+		want := &Config{
+			ServiceURL: "https://myservice.mycompany.com:443",
+			Realm:      "MYKERBEROSREALM.COM",
+			KeepAlive:  5,
+			Timeout:    30,
+			RetryTimer: 15,
+			TND: TNDConfig{
+				[]TNDHTTPSConfig{
+					{
+						URL:  "https://tnd1.mycompany.com:443",
+						Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+					},
+					{
+						URL:  "https://tnd2.mycompany.com:443",
+						Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+					},
 				},
 			},
-		},
-		Verbose:    true,
-		MinUserID:  1000,
-		StartDelay: 20,
-	}
-	if !reflect.DeepEqual(want, cfg) {
-		t.Errorf("got %v, want %v", cfg, want)
+			Verbose:    true,
+			MinUserID:  1000,
+			StartDelay: 20,
+		}
+		if !reflect.DeepEqual(want, cfg) {
+			t.Errorf("got %v, want %v", cfg, want)
+		}
 	}
 }

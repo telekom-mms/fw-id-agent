@@ -93,6 +93,17 @@ func (c *Config) Valid() bool {
 	return true
 }
 
+// Default returns a new config with default values
+func Default() *Config {
+	return &Config{
+		KeepAlive:  5,
+		Timeout:    30,
+		RetryTimer: 15,
+		MinUserID:  1000,
+		StartDelay: 20,
+	}
+}
+
 // Load loads the json configuration from file path
 func Load(path string) (*Config, error) {
 	// read file contents
@@ -102,7 +113,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	// parse config
-	cfg := &Config{}
+	cfg := Default()
 	if err := json.Unmarshal(file, cfg); err != nil {
 		return nil, err
 	}
