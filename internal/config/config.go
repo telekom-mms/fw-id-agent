@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"time"
 )
 
 // TNDHTTPSConfig is a https configuration in the
@@ -29,6 +30,21 @@ type Config struct {
 	Verbose    bool
 	MinUserID  int
 	StartDelay int
+}
+
+// GetKeepAlive returns the client keep-alive time as Duration
+func (c *Config) GetKeepAlive() time.Duration {
+	return time.Duration(c.KeepAlive) * time.Minute
+}
+
+// GetTimeout returns the client timeout as Duration
+func (c *Config) GetTimeout() time.Duration {
+	return time.Duration(c.Timeout) * time.Second
+}
+
+// GetRetryTimer returns the client retry timer as Duration
+func (c *Config) GetRetryTimer() time.Duration {
+	return time.Duration(c.RetryTimer) * time.Second
 }
 
 // Load loads the json configuration from file path

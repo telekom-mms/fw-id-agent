@@ -6,7 +6,38 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
+
+// TestConfigGetKeepAlive tests GetKeepAlive of Config
+func TestConfigGetKeepAlive(t *testing.T) {
+	config := &Config{KeepAlive: 5}
+	want := 5 * time.Minute
+	got := config.GetKeepAlive()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// TestConfigGetTimeout tests GetTimeout of Config
+func TestConfigGetTimeout(t *testing.T) {
+	config := &Config{Timeout: 30}
+	want := 30 * time.Second
+	got := config.GetTimeout()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// TestConfigGetRetryTimer tests GetRetryTimer of Config
+func TestConfigGetRetryTimer(t *testing.T) {
+	config := &Config{RetryTimer: 15}
+	want := 15 * time.Second
+	got := config.GetRetryTimer()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
 
 // TestLoad tests Load
 func TestLoad(t *testing.T) {
