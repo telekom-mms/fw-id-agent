@@ -21,14 +21,23 @@ type TNDConfig struct {
 
 // Config is the agent configuration
 type Config struct {
+	// ServiceURL is the URL used for requests to the service
 	ServiceURL string
-	Realm      string
-	KeepAlive  int
-	Timeout    int
+	// Realm is the client's Kerberos realm used for requests to the service
+	Realm string
+	// KeepAlive is the default client keep-alive time in minutes
+	KeepAlive int
+	// Timeout is the client's timeout for requests to the service in seconds
+	Timeout int
+	// RetryTimer is the client's login retry timer in case of errors in seconds
 	RetryTimer int
-	TND        TNDConfig
-	Verbose    bool
-	MinUserID  int
+	// TND is the client's trusted network detection configuration
+	TND TNDConfig
+	// Verbose specifies whether the client should show verbose output
+	Verbose bool
+	// MinUserID is the minimum allowed user ID
+	MinUserID int
+	// StartDelay is the time the agent sleeps before starting in seconds
 	StartDelay int
 }
 
