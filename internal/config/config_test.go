@@ -52,7 +52,9 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.Remove(empty.Name())
+	defer func() {
+		_ = os.Remove(empty.Name())
+	}()
 
 	_, err = Load(empty.Name())
 	if err == nil {
@@ -86,7 +88,9 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.Remove(valid.Name())
+	defer func() {
+		_ = os.Remove(valid.Name())
+	}()
 
 	if _, err := valid.Write([]byte(content)); err != nil {
 		log.Fatal(err)
