@@ -54,6 +54,11 @@ func Run() {
 		cfg.Verbose = *verbose
 	}
 
+	// check if config is valid
+	if !cfg.Valid() {
+		log.Fatal("Agent could not get valid config from file or command line arguments")
+	}
+
 	// set verbose output
 	if cfg.Verbose {
 		log.SetLevel(log.DebugLevel)

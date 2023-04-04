@@ -13,10 +13,31 @@ type TNDHTTPSConfig struct {
 	Hash string
 }
 
+// Valid returns whether TNDHTTPSConfig is valid
+func (t *TNDHTTPSConfig) Valid() bool {
+	if t.URL == "" || t.Hash == "" {
+		return false
+	}
+	return true
+}
+
 // TNDConfig is the trusted network detection configuration in the
 // agent configuration
 type TNDConfig struct {
 	HTTPSServers []TNDHTTPSConfig
+}
+
+// Valid returns whether TNDConfig is valid
+func (t *TNDConfig) Valid() bool {
+	if len(t.HTTPSServers) == 0 {
+		return false
+	}
+	for _, s := range t.HTTPSServers {
+		if !s.Valid() {
+			return false
+		}
+	}
+	return true
 }
 
 // Config is the agent configuration
@@ -54,6 +75,22 @@ func (c *Config) GetTimeout() time.Duration {
 // GetRetryTimer returns the client retry timer as Duration
 func (c *Config) GetRetryTimer() time.Duration {
 	return time.Duration(c.RetryTimer) * time.Second
+}
+
+// Valid returns whether Config is valid
+func (c *Config) Valid() bool {
+	if c == nil ||
+		c.ServiceURL == "" ||
+		c.Realm == "" ||
+		c.KeepAlive < 0 ||
+		c.Timeout < 0 ||
+		c.RetryTimer < 0 ||
+		!c.TND.Valid() ||
+		c.MinUserID < 0 ||
+		c.StartDelay < 0 {
+		return false
+	}
+	return true
 }
 
 // Load loads the json configuration from file path

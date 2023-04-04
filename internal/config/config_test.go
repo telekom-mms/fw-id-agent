@@ -39,6 +39,36 @@ func TestConfigGetRetryTimer(t *testing.T) {
 	}
 }
 
+// TestConfigValid tests Valid of Config
+func TestConfigValid(t *testing.T) {
+	// invalid
+	want := false
+	for _, got := range []bool{
+		(*Config)(nil).Valid(),
+		(&Config{}).Valid(),
+		Default().Valid(),
+	} {
+		if got != want {
+			t.Errorf("got %t, want %t", got, want)
+		}
+	}
+
+	// valid
+	valid := Default()
+	valid.ServiceURL = "https://testService.com:443"
+	valid.Realm = "TESTKERBEROSREALM.COM"
+	valid.TND.HTTPSServers = append(valid.TND.HTTPSServers, TNDHTTPSConfig{
+		URL:  "https://tnd.testcompany.com:443",
+		Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+	})
+
+	want = true
+	got := valid.Valid()
+	if got != want {
+		t.Errorf("got %t, want %t", got, want)
+	}
+}
+
 // TestLoad tests Load
 func TestLoad(t *testing.T) {
 	// test invalid path
