@@ -39,6 +39,7 @@ func Run() {
 	realm := flag.String("realm", "", "Set kerberos realm")
 	keepAlive := flag.Int("keepalive", 0, "Set default client keep-alive in `minutes`")
 	timeout := flag.Int("timeout", 0, "Set client request timeout in `seconds`")
+	retryTimer := flag.Int("retrytimer", 0, "Set client login retry timer in case of errors in `seconds`")
 	flag.Parse()
 
 	// print version?
@@ -65,6 +66,9 @@ func Run() {
 	}
 	if flagIsSet("timeout") {
 		cfg.Timeout = *timeout
+	}
+	if flagIsSet("retrytimer") {
+		cfg.RetryTimer = *retryTimer
 	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
