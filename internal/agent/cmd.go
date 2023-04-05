@@ -62,6 +62,7 @@ func Run() {
 	retryTimer := flag.Int("retrytimer", 0, "Set client login retry timer in case of errors in `seconds`")
 	tndServers := flag.String("tndservers", "", "Set comma-separated `list` of TND server url:hash pairs")
 	minUserID := flag.Int("minuserid", 0, "Set minimum allowed user `ID`")
+	startDelay := flag.Int("startdelay", 0, "Set agent start delay in `seconds`")
 	flag.Parse()
 
 	// print version?
@@ -104,6 +105,9 @@ func Run() {
 	}
 	if flagIsSet("minuserid") {
 		cfg.MinUserID = *minUserID
+	}
+	if flagIsSet("startdelay") {
+		cfg.StartDelay = *startDelay
 	}
 
 	// check if config is valid
