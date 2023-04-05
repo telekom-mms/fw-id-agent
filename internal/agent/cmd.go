@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"os/user"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
@@ -29,6 +30,25 @@ func flagIsSet(name string) bool {
 	return isSet
 }
 
+// parseTNDServers parses the TND servers command line argument
+func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
+	if servers == "" {
+		return nil, false
+	}
+	list := []config.TNDHTTPSConfig{}
+	for _, s := range strings.Split(servers, ",") {
+		i := strings.LastIndex(s, ":")
+		if i == -1 || len(s) < i+2 {
+			return nil, false
+		}
+		url := s[:i]
+		hash := strings.ToLower(s[i+1:])
+		server := config.TNDHTTPSConfig{URL: url, Hash: hash}
+		list = append(list, server)
+	}
+	return list, true
+}
+
 // Run is the main entry point
 func Run() {
 	// parse command line arguments
@@ -40,6 +60,7 @@ func Run() {
 	keepAlive := flag.Int("keepalive", 0, "Set default client keep-alive in `minutes`")
 	timeout := flag.Int("timeout", 0, "Set client request timeout in `seconds`")
 	retryTimer := flag.Int("retrytimer", 0, "Set client login retry timer in case of errors in `seconds`")
+	tndServers := flag.String("tndservers", "", "Set comma-separated `list` of TND server url:hash pairs")
 	flag.Parse()
 
 	// print version?
@@ -69,6 +90,13 @@ func Run() {
 	}
 	if flagIsSet("retrytimer") {
 		cfg.RetryTimer = *retryTimer
+	}
+	if flagIsSet("tndservers") {
+		servers, ok := parseTNDServers(*tndServers)
+		if !ok {
+			log.WithField("tndservers", *tndServers).Fatal("Agent could not parse TND servers")
+		}
+		cfg.TND.HTTPSServers = servers
 	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
