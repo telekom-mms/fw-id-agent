@@ -53,7 +53,7 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 func Run() {
 	// parse command line arguments
 	defaults := config.Default()
-	cfgFile := flag.String("config", "config.json", "Set config `file`")
+	cfgFile := flag.String("config", "", "Set config `file`")
 	ver := flag.Bool("version", false, "print version")
 	serviceURL := flag.String("serviceurl", "", "Set service URL")
 	realm := flag.String("realm", "", "Set kerberos realm")
@@ -72,10 +72,14 @@ func Run() {
 		os.Exit(0)
 	}
 
-	// load config
-	cfg, err := config.Load(*cfgFile)
-	if err != nil {
-		log.WithError(err).Fatal("Agent could not load config")
+	// load config or try defaults
+	cfg := config.Default()
+	if flagIsSet("config") {
+		c, err := config.Load(*cfgFile)
+		if err != nil {
+			log.WithError(err).Fatal("Agent could not load config")
+		}
+		cfg = c
 	}
 
 	// overwrite config settings with command line arguments
