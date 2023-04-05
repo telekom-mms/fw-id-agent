@@ -125,6 +125,8 @@ func Run() {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	log.WithField("config", cfg).Debug("Agent starting with valid config")
+
 	// check user
 	osUser, err := user.Current()
 	if err != nil {
