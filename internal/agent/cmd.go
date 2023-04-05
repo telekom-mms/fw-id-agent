@@ -19,6 +19,21 @@ var (
 	version = "unknown"
 )
 
+// command line argument names
+const (
+	argConfig     = "config"
+	argVersion    = "version"
+	argServiceURL = "serviceurl"
+	argRealm      = "realm"
+	argKeepAlive  = "keepalive"
+	argTimeout    = "timeout"
+	argRetryTimer = "retrytimer"
+	argTNDServers = "tndservers"
+	argVerbose    = "verbose"
+	argMinUserID  = "minuserid"
+	argStartDelay = "startdelay"
+)
+
 // flagIsSet returns whether flag with name is set as command line argument
 func flagIsSet(name string) bool {
 	isSet := false
@@ -53,17 +68,17 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 func Run() {
 	// parse command line arguments
 	defaults := config.Default()
-	cfgFile := flag.String("config", "", "Set config `file`")
-	ver := flag.Bool("version", false, "print version")
-	serviceURL := flag.String("serviceurl", "", "Set service URL")
-	realm := flag.String("realm", "", "Set kerberos realm")
-	keepAlive := flag.Int("keepalive", defaults.KeepAlive, "Set default client keep-alive in `minutes`")
-	timeout := flag.Int("timeout", defaults.Timeout, "Set client request timeout in `seconds`")
-	retryTimer := flag.Int("retrytimer", defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
-	tndServers := flag.String("tndservers", "", "Set comma-separated `list` of TND server url:hash pairs")
-	verbose := flag.Bool("verbose", defaults.Verbose, "Set verbose output")
-	minUserID := flag.Int("minuserid", defaults.MinUserID, "Set minimum allowed user `ID`")
-	startDelay := flag.Int("startdelay", defaults.StartDelay, "Set agent start delay in `seconds`")
+	cfgFile := flag.String(argConfig, "", "Set config `file`")
+	ver := flag.Bool(argVersion, false, "print version")
+	serviceURL := flag.String(argServiceURL, "", "Set service URL")
+	realm := flag.String(argRealm, "", "Set kerberos realm")
+	keepAlive := flag.Int(argKeepAlive, defaults.KeepAlive, "Set default client keep-alive in `minutes`")
+	timeout := flag.Int(argTimeout, defaults.Timeout, "Set client request timeout in `seconds`")
+	retryTimer := flag.Int(argRetryTimer, defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
+	tndServers := flag.String(argTNDServers, "", "Set comma-separated `list` of TND server url:hash pairs")
+	verbose := flag.Bool(argVerbose, defaults.Verbose, "Set verbose output")
+	minUserID := flag.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
+	startDelay := flag.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
 	flag.Parse()
 
 	// print version?
@@ -83,35 +98,35 @@ func Run() {
 	}
 
 	// overwrite config settings with command line arguments
-	if flagIsSet("serviceurl") {
+	if flagIsSet(argServiceURL) {
 		cfg.ServiceURL = *serviceURL
 	}
-	if flagIsSet("realm") {
+	if flagIsSet(argRealm) {
 		cfg.Realm = *realm
 	}
-	if flagIsSet("keepalive") {
+	if flagIsSet(argKeepAlive) {
 		cfg.KeepAlive = *keepAlive
 	}
-	if flagIsSet("timeout") {
+	if flagIsSet(argTimeout) {
 		cfg.Timeout = *timeout
 	}
-	if flagIsSet("retrytimer") {
+	if flagIsSet(argRetryTimer) {
 		cfg.RetryTimer = *retryTimer
 	}
-	if flagIsSet("tndservers") {
+	if flagIsSet(argTNDServers) {
 		servers, ok := parseTNDServers(*tndServers)
 		if !ok {
-			log.WithField("tndservers", *tndServers).Fatal("Agent could not parse TND servers")
+			log.WithField(argTNDServers, *tndServers).Fatal("Agent could not parse TND servers")
 		}
 		cfg.TND.HTTPSServers = servers
 	}
-	if flagIsSet("verbose") {
+	if flagIsSet(argVerbose) {
 		cfg.Verbose = *verbose
 	}
-	if flagIsSet("minuserid") {
+	if flagIsSet(argMinUserID) {
 		cfg.MinUserID = *minUserID
 	}
-	if flagIsSet("startdelay") {
+	if flagIsSet(argStartDelay) {
 		cfg.StartDelay = *startDelay
 	}
 
