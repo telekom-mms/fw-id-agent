@@ -27,6 +27,15 @@ func (a *Agent) logTND(trusted bool) {
 	log.Info("Agent is connected to a trusted network")
 }
 
+// logLogin logs if the identity agent is logged in
+func (a *Agent) logLogin(loggedIn bool) {
+	if !loggedIn {
+		log.Info("Agent logged out")
+		return
+	}
+	log.Info("Agent logged in successfully")
+}
+
 // notifyTND notifies the user if we are connected to a trusted network
 func (a *Agent) notifyTND(trusted bool) {
 	if !trusted {
@@ -125,6 +134,7 @@ func (a *Agent) start() {
 			if r != loggedIn {
 				log.WithField("loggedIn", r).Debug("Agent got login change")
 				loggedIn = r
+				a.logLogin(loggedIn)
 				a.notifyLogin(loggedIn)
 			}
 
