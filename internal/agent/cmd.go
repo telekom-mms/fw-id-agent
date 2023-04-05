@@ -38,6 +38,7 @@ func Run() {
 	serviceURL := flag.String("serviceurl", "", "Set service URL")
 	realm := flag.String("realm", "", "Set kerberos realm")
 	keepAlive := flag.Int("keepalive", 0, "Set default client keep-alive in `minutes`")
+	timeout := flag.Int("timeout", 0, "Set client request timeout in `seconds`")
 	flag.Parse()
 
 	// print version?
@@ -61,6 +62,9 @@ func Run() {
 	}
 	if flagIsSet("keepalive") {
 		cfg.KeepAlive = *keepAlive
+	}
+	if flagIsSet("timeout") {
+		cfg.Timeout = *timeout
 	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
