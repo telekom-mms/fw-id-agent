@@ -37,6 +37,7 @@ func Run() {
 	ver := flag.Bool("version", false, "print version")
 	serviceURL := flag.String("serviceurl", "", "Set service URL")
 	realm := flag.String("realm", "", "Set kerberos realm")
+	keepAlive := flag.Int("keepalive", 0, "Set default client keep-alive in `minutes`")
 	flag.Parse()
 
 	// print version?
@@ -57,6 +58,9 @@ func Run() {
 	}
 	if flagIsSet("realm") {
 		cfg.Realm = *realm
+	}
+	if flagIsSet("keepalive") {
+		cfg.KeepAlive = *keepAlive
 	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
