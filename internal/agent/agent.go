@@ -134,6 +134,11 @@ func (a *Agent) start() {
 	a.tnd.Start()
 	defer a.tnd.Stop()
 
+	// start sleep monitor
+	sleepMon := NewSleepMon()
+	sleepMon.Start()
+	defer sleepMon.Stop()
+
 	// start main loop
 	trusted := false
 	loggedIn := false
@@ -183,6 +188,17 @@ func (a *Agent) start() {
 				return
 			}
 			a.handleRequest(r, trusted, loggedIn)
+
+		case _, ok := <-sleepMon.Events():
+			if !ok {
+				log.Debug("Agent SleepMon events channel closed")
+				return
+			}
+
+			// reset trusted network status and stop client
+			log.Info("Agent got sleep event, resetting trusted network status and stopping client")
+			trusted = false
+			a.stopClient()
 
 		case <-a.done:
 			log.Debug("Agent stopping")
