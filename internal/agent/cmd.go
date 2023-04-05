@@ -35,6 +35,7 @@ func Run() {
 	cfgFile := flag.String("config", "config.json", "Set config `file`")
 	verbose := flag.Bool("verbose", false, "Set verbose output")
 	ver := flag.Bool("version", false, "print version")
+	serviceURL := flag.String("serviceurl", "", "Set service URL")
 	flag.Parse()
 
 	// print version?
@@ -50,6 +51,9 @@ func Run() {
 	}
 
 	// overwrite config settings with command line arguments
+	if flagIsSet("serviceurl") {
+		cfg.ServiceURL = *serviceURL
+	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
 	}
