@@ -61,6 +61,7 @@ func Run() {
 	timeout := flag.Int("timeout", 0, "Set client request timeout in `seconds`")
 	retryTimer := flag.Int("retrytimer", 0, "Set client login retry timer in case of errors in `seconds`")
 	tndServers := flag.String("tndservers", "", "Set comma-separated `list` of TND server url:hash pairs")
+	minUserID := flag.Int("minuserid", 0, "Set minimum allowed user `ID`")
 	flag.Parse()
 
 	// print version?
@@ -100,6 +101,9 @@ func Run() {
 	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
+	}
+	if flagIsSet("minuserid") {
+		cfg.MinUserID = *minUserID
 	}
 
 	// check if config is valid
