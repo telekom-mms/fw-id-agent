@@ -36,6 +36,7 @@ func Run() {
 	verbose := flag.Bool("verbose", false, "Set verbose output")
 	ver := flag.Bool("version", false, "print version")
 	serviceURL := flag.String("serviceurl", "", "Set service URL")
+	realm := flag.String("realm", "", "Set kerberos realm")
 	flag.Parse()
 
 	// print version?
@@ -53,6 +54,9 @@ func Run() {
 	// overwrite config settings with command line arguments
 	if flagIsSet("serviceurl") {
 		cfg.ServiceURL = *serviceURL
+	}
+	if flagIsSet("realm") {
+		cfg.Realm = *realm
 	}
 	if flagIsSet("verbose") {
 		cfg.Verbose = *verbose
