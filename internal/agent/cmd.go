@@ -52,17 +52,18 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 // Run is the main entry point
 func Run() {
 	// parse command line arguments
+	defaults := config.Default()
 	cfgFile := flag.String("config", "config.json", "Set config `file`")
-	verbose := flag.Bool("verbose", false, "Set verbose output")
 	ver := flag.Bool("version", false, "print version")
 	serviceURL := flag.String("serviceurl", "", "Set service URL")
 	realm := flag.String("realm", "", "Set kerberos realm")
-	keepAlive := flag.Int("keepalive", 0, "Set default client keep-alive in `minutes`")
-	timeout := flag.Int("timeout", 0, "Set client request timeout in `seconds`")
-	retryTimer := flag.Int("retrytimer", 0, "Set client login retry timer in case of errors in `seconds`")
+	keepAlive := flag.Int("keepalive", defaults.KeepAlive, "Set default client keep-alive in `minutes`")
+	timeout := flag.Int("timeout", defaults.Timeout, "Set client request timeout in `seconds`")
+	retryTimer := flag.Int("retrytimer", defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
 	tndServers := flag.String("tndservers", "", "Set comma-separated `list` of TND server url:hash pairs")
-	minUserID := flag.Int("minuserid", 0, "Set minimum allowed user `ID`")
-	startDelay := flag.Int("startdelay", 0, "Set agent start delay in `seconds`")
+	verbose := flag.Bool("verbose", defaults.Verbose, "Set verbose output")
+	minUserID := flag.Int("minuserid", defaults.MinUserID, "Set minimum allowed user `ID`")
+	startDelay := flag.Int("startdelay", defaults.StartDelay, "Set agent start delay in `seconds`")
 	flag.Parse()
 
 	// print version?
