@@ -3,6 +3,7 @@ package api
 import (
 	"net"
 	"os"
+	"os/user"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -123,4 +124,13 @@ func NewServer(sockFile string) *Server {
 		sockFile: sockFile,
 		requests: make(chan *Request),
 	}
+}
+
+// GetUserSocketFile returns the socket file for the current user
+func GetUserSocketFile() string {
+	user, err := user.Current()
+	if err != nil {
+		log.WithError(err).Fatal("Agent could not get current user")
+	}
+	return "/tmp/fw-id-agent-" + user.Uid
 }

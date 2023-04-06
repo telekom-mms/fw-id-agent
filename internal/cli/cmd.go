@@ -9,7 +9,7 @@ import (
 
 // Run is the main entry point
 func Run() {
-	client := api.NewClient("server.sock")
+	client := api.NewClient(api.GetUserSocketFile())
 	b := client.Query()
 	if b == nil {
 		return

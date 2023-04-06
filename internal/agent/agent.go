@@ -92,7 +92,7 @@ func (a *Agent) start() {
 	defer close(a.closed)
 
 	// start api server
-	server := api.NewServer("server.sock")
+	server := api.NewServer(api.GetUserSocketFile())
 	server.Start()
 	defer server.Stop()
 
