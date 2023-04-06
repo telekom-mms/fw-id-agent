@@ -1,10 +1,9 @@
 package cli
 
 import (
-	"log"
-
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
+	log "github.com/sirupsen/logrus"
 )
 
 // Run is the main entry point
