@@ -77,6 +77,7 @@ func (a *Agent) startClient() {
 	if a.client != nil {
 		return
 	}
+	a.loggedIn = false
 	a.client = client.NewClient(a.config)
 	a.client.Start()
 	a.login = a.client.Results()
@@ -87,6 +88,7 @@ func (a *Agent) stopClient() {
 	if a.client == nil {
 		return
 	}
+	a.loggedIn = false
 	a.client.Stop()
 	a.client = nil
 	a.login = nil
