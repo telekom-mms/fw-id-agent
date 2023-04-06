@@ -91,8 +91,8 @@ func (s *Server) Start() {
 	}
 	s.listen = listen
 
-	// make sure everyone can access the sock file
-	if err := os.Chmod(s.sockFile, 0777); err != nil {
+	// make sure only the current user can access the sock file
+	if err := os.Chmod(s.sockFile, 0700); err != nil {
 		log.WithError(err).Error("Agent could not set permissions of sock file")
 	}
 
