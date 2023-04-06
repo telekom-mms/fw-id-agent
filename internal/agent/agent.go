@@ -193,10 +193,15 @@ func (a *Agent) start() {
 			}
 			a.handleRequest(r)
 
-		case _, ok := <-sleepMon.Events():
+		case sleep, ok := <-sleepMon.Events():
 			if !ok {
 				log.Debug("Agent SleepMon events channel closed")
 				return
+			}
+
+			// ignore wake-up event
+			if !sleep {
+				break
 			}
 
 			// reset trusted network status and stop client
