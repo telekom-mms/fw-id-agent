@@ -11,5 +11,6 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Ignore executable
-fw-id-agent
+# Ignore executables
+/fw-id-agent
+/fw-id-cli
