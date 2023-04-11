@@ -18,13 +18,24 @@ var (
 
 	// json specifies whether output should be formatted as json
 	json = false
+
+	// version is the CLI version, to be set at compile time
+	version = "unknown"
 )
 
 // parseCommandLine parses the command line arguments
 func parseCommandLine() {
 	flag.BoolVar(&verbose, "verbose", verbose, "set verbose output")
 	flag.BoolVar(&json, "json", json, "set json output")
+	ver := flag.Bool("version", false, "print version")
 	flag.Parse()
+
+	// print version?
+	if *ver {
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
 	command = flag.Arg(0)
 }
 
