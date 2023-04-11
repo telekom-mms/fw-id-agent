@@ -13,12 +13,16 @@ var (
 	// command is the command specified on the command line
 	command = ""
 
+	// verbose specifies verbose output
+	verbose = false
+
 	// json specifies whether output should be formatted as json
 	json = false
 )
 
 // parseCommandLine parses the command line arguments
 func parseCommandLine() {
+	flag.BoolVar(&verbose, "verbose", verbose, "set verbose output")
 	flag.BoolVar(&json, "json", json, "set json output")
 	flag.Parse()
 	command = flag.Arg(0)
@@ -47,7 +51,9 @@ func getStatus() {
 
 	fmt.Printf("Trusted Network: %t\n", status.TrustedNetwork)
 	fmt.Printf("Logged In:       %t\n", status.LoggedIn)
-	fmt.Printf("Config:          %#v\n", *status.Config)
+	if verbose {
+		fmt.Printf("Config:          %#v\n", *status.Config)
+	}
 }
 
 // Run is the main entry point
