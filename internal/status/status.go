@@ -23,6 +23,16 @@ func (s *Status) JSON() ([]byte, error) {
 	return b, nil
 }
 
+// JSONIndent returns the Status as indented JSON
+func (s *Status) JSONIndent() ([]byte, error) {
+	b, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
 // NewFromJSON returns a new Status parsed from JSON in b
 func NewFromJSON(b []byte) (*Status, error) {
 	s := New()

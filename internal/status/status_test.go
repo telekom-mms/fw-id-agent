@@ -22,6 +22,22 @@ func TestJSON(t *testing.T) {
 	}
 }
 
+// TestJSONIndent tests JSONIndent and NewFromJSON of Status
+func TestJSONIndent(t *testing.T) {
+	s := New()
+	b, err := s.JSONIndent()
+	if err != nil {
+		log.Fatal(err)
+	}
+	n, err := NewFromJSON(b)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !reflect.DeepEqual(n, s) {
+		t.Errorf("got %v, want %v", n, s)
+	}
+}
+
 // TestNew tests New
 func TestNew(t *testing.T) {
 	s := New()
