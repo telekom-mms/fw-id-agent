@@ -67,6 +67,9 @@ func parseCommandLine() {
 	switch command {
 	case "status":
 		statusCmd.Parse(os.Args[2:])
+	default:
+		flag.Usage()
+		os.Exit(2)
 	}
 }
 
