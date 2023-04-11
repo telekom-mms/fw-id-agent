@@ -31,8 +31,29 @@ func parseCommandLine() {
 	statusCmd.BoolVar(&verbose, "verbose", verbose, "set verbose output")
 	statusCmd.BoolVar(&json, "json", json, "set json output")
 
-	// flags
+	// command line arguments
 	ver := flag.Bool("version", false, "print version")
+
+	// usage output
+	flag.Usage = func() {
+		cmd := os.Args[0]
+		w := flag.CommandLine.Output()
+		usage := func(f string, args ...interface{}) {
+			_, err := fmt.Fprintf(w, f, args...)
+			if err != nil {
+				log.WithError(err).Fatal("CLI could not print usage")
+			}
+		}
+		usage("Usage:\n")
+		usage("  %s [options] [command]\n", cmd)
+		usage("\nOptions:\n")
+		flag.PrintDefaults()
+		usage("\nCommands:\n")
+		usage("  status\n")
+		usage("        show agent status\n")
+	}
+
+	// parse command line arguments
 	flag.Parse()
 
 	// print version?
