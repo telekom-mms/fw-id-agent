@@ -45,9 +45,9 @@ func getStatus() {
 		return
 	}
 
-	log.Printf("Trusted Network: %t", status.TrustedNetwork)
-	log.Printf("Logged In: %t", status.LoggedIn)
-	log.Printf("Config: %#v", *status.Config)
+	fmt.Printf("Trusted Network: %t\n", status.TrustedNetwork)
+	fmt.Printf("Logged In:       %t\n", status.LoggedIn)
+	fmt.Printf("Config:          %#v\n", *status.Config)
 }
 
 // Run is the main entry point
