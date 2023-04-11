@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
@@ -11,10 +12,14 @@ import (
 var (
 	// command is the command specified on the command line
 	command = ""
+
+	// json specifies whether output should be formatted as json
+	json = false
 )
 
 // parseCommandLine parses the command line arguments
 func parseCommandLine() {
+	flag.BoolVar(&json, "json", json, "set json output")
 	flag.Parse()
 	command = flag.Arg(0)
 }
@@ -29,6 +34,15 @@ func getStatus() {
 	status, err := status.NewFromJSON(b)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if json {
+		j, err := status.JSONIndent()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(j))
+		return
 	}
 
 	log.Printf("Trusted Network: %t", status.TrustedNetwork)
