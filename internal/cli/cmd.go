@@ -8,6 +8,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	// command is the command specified on the command line
+	command = ""
+)
+
+// parseCommandLine parses the command line arguments
+func parseCommandLine() {
+	flag.Parse()
+	command = flag.Arg(0)
+}
+
 // getStatus retrieves the agent status and prints it
 func getStatus() {
 	client := api.NewClient(api.GetUserSocketFile())
@@ -27,8 +38,8 @@ func getStatus() {
 
 // Run is the main entry point
 func Run() {
-	flag.Parse()
-	command := flag.Arg(0)
+	parseCommandLine()
+
 	switch command {
 	case "status":
 		getStatus()
