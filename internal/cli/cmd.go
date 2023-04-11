@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
@@ -25,8 +26,12 @@ var (
 
 // parseCommandLine parses the command line arguments
 func parseCommandLine() {
-	flag.BoolVar(&verbose, "verbose", verbose, "set verbose output")
-	flag.BoolVar(&json, "json", json, "set json output")
+	// status subcommand
+	statusCmd := flag.NewFlagSet("status", flag.ExitOnError)
+	statusCmd.BoolVar(&verbose, "verbose", verbose, "set verbose output")
+	statusCmd.BoolVar(&json, "json", json, "set json output")
+
+	// flags
 	ver := flag.Bool("version", false, "print version")
 	flag.Parse()
 
@@ -36,7 +41,12 @@ func parseCommandLine() {
 		os.Exit(0)
 	}
 
+	// parse subcommands
 	command = flag.Arg(0)
+	switch command {
+	case "status":
+		statusCmd.Parse(os.Args[2:])
+	}
 }
 
 // getStatus retrieves the agent status and prints it
