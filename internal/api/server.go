@@ -52,7 +52,7 @@ func (s *Server) handleRequest(conn net.Conn) {
 		_ = conn.Close()
 	}
 
-	// forward client's request to daemon
+	// forward client's request to agent
 	s.requests <- &Request{
 		msg:  msg,
 		conn: conn,
@@ -94,7 +94,7 @@ func (s *Server) Start() {
 
 	// make sure only the current user can access the sock file
 	if err := os.Chmod(s.sockFile, 0700); err != nil {
-		log.WithError(err).Error("Agent could not set permissions of sock file")
+		log.WithError(err).Error("Agent could not set permissions of socket file")
 	}
 
 	// handle client connections
