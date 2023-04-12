@@ -51,6 +51,8 @@ func parseCommandLine() {
 		usage("\nCommands:\n")
 		usage("  status\n")
 		usage("        show agent status\n")
+		usage("  relogin\n")
+		usage("        relogin agent\n")
 	}
 
 	// parse command line arguments
@@ -67,6 +69,7 @@ func parseCommandLine() {
 	switch command {
 	case "status":
 		statusCmd.Parse(os.Args[2:])
+	case "relogin":
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -101,6 +104,21 @@ func getStatus() {
 	}
 }
 
+// relogin sends a relogin request to the agent
+func relogin() {
+	// send request to agent
+	client := api.NewClient(api.GetUserSocketFile())
+	msg := api.NewMessage(api.TypeRelogin, nil)
+	reply := client.Request(msg)
+
+	// handle response
+	switch reply.Type {
+	case api.TypeOK:
+	case api.TypeError:
+		log.WithField("error", string(reply.Value)).Error("Agent sent error reply")
+	}
+}
+
 // Run is the main entry point
 func Run() {
 	parseCommandLine()
@@ -108,5 +126,7 @@ func Run() {
 	switch command {
 	case "status":
 		getStatus()
+	case "relogin":
+		relogin()
 	}
 }
