@@ -17,6 +17,7 @@ const (
 	TypeOK
 	TypeError
 	TypeQuery
+	TypeRelogin
 	TypeUndefined
 )
 

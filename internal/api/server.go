@@ -63,6 +63,7 @@ func (s *Server) handleRequest(conn net.Conn) {
 	// check if its a known message type
 	switch msg.Type {
 	case TypeQuery:
+	case TypeRelogin:
 	default:
 		// send Error and disconnect
 		e := NewError([]byte("invalid message"))

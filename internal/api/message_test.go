@@ -14,6 +14,7 @@ func TestNewMessage(t *testing.T) {
 		TypeOK,
 		TypeError,
 		TypeQuery,
+		TypeRelogin,
 		TypeUndefined,
 	} {
 		log.Println("NewMessage with type", typ)
