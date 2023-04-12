@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// initTestClientServer returns a client an server for testing;
+// initTestClientServer returns a client and server for testing;
 // the server simply closes client requests
 func initTestClientServer() (*Client, *Server) {
 	server := NewServer("test.sock")

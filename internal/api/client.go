@@ -16,14 +16,14 @@ const (
 	clientTimeout = 30 * time.Second
 )
 
-// Client is a Daemon API client
+// Client is an API client
 type Client struct {
 	sockFile string
 }
 
 // Request sends msg to the server and returns the server's response
 func (c *Client) Request(msg *Message) *Message {
-	// connect to daemon
+	// connect to API server
 	conn, err := net.DialTimeout("unix", c.sockFile, connectTimeout)
 	if err != nil {
 		log.WithError(err).Fatal("Client dial error")
@@ -38,7 +38,7 @@ func (c *Client) Request(msg *Message) *Message {
 		log.WithError(err).Fatal("Client set deadline error")
 	}
 
-	// send message to daemon
+	// send message to API server
 	err = WriteMessage(conn, msg)
 	if err != nil {
 		log.WithError(err).Fatal("Client send message error")
@@ -53,9 +53,9 @@ func (c *Client) Request(msg *Message) *Message {
 	return reply
 }
 
-// Query sends retrieves the status from the server
+// Query retrieves the status from the API server
 func (c *Client) Query() []byte {
-	// send query to daemon
+	// send query to API server
 	msg := NewMessage(TypeQuery, nil)
 	reply := c.Request(msg)
 
