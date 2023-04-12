@@ -84,6 +84,21 @@ func (a *Agent) handleRequest(request *api.Request, trusted, loggedIn bool) {
 		}
 		request.Reply(b)
 		go request.Close()
+	case api.TypeRelogin:
+		log.Info("Agent got relogin request from user")
+		if !trusted {
+			// no trusted network, abort
+			log.Error("Agent not connected to a trusted network, not restarting client")
+			request.Error("Not connected to a trusted network")
+			go request.Close()
+			return
+		}
+
+		// trusted network, restart client
+		log.Info("Agent is restarting client")
+		a.stopClient()
+		a.startClient()
+		go request.Close()
 	}
 }
 
