@@ -48,19 +48,12 @@ func (a *Agent) initTND() {
 	}
 }
 
-// initClient initializes the identity agent client from the config
-func (a *Agent) initClient() {
-	a.client.SetURL(a.config.ServiceURL)
-	a.client.SetRealm(a.config.Realm)
-}
-
 // startClient starts the client
 func (a *Agent) startClient() {
 	if a.client != nil {
 		return
 	}
-	a.client = client.NewClient()
-	a.initClient()
+	a.client = client.NewClient(a.config)
 	a.client.Start()
 	a.login = a.client.Results()
 }

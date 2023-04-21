@@ -1,6 +1,9 @@
 {
 	"ServiceURL":"https://myservice.mycompany.com:443",
 	"Realm": "MYKERBEROSREALM.COM",
+	"KeepAlive": 5,
+	"Timeout": 30,
+	"RetryTimer": 15,
 	"TND":{
 		"HTTPSServers":[
 			{
@@ -12,5 +15,8 @@
 				"Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
 			}
 		]
-	}
+	},
+	"Verbose": true,
+	"MinUserID": 1000,
+	"StartDelay": 20
 }

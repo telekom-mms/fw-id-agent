@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
 	krbClient "github.com/jcmturner/gokrb5/v8/client"
 	krbConfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"
@@ -19,14 +20,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// retryTimer is the login retry timer in case of errors in seconds
-	retryTimer = 15
-)
-
 // Client is an identity agent client
 type Client struct {
-	config    Config
+	config    *config.Config
 	keepAlive time.Duration
 	results   chan bool
 	done      chan struct{}
@@ -43,20 +39,13 @@ const (
 	BackendError       Error = 101
 )
 
-// Config is an identity agent client config
-type Config struct {
-	url     string
-	timeout time.Duration
-	realm   string
-}
-
 // LoginResponse is a login response
 type LoginResponse struct {
 	KeepAlive int `json:"keep-alive"`
 }
 
 func (c *Client) doServiceRequest(api string) (response *http.Response, err error) {
-	serviceURL := c.config.url + api
+	serviceURL := c.config.ServiceURL + api
 	var currentUser *user.User
 	currentUser, err = user.Current()
 	if err != nil || currentUser == nil {
@@ -91,9 +80,9 @@ func (c *Client) doServiceRequest(api string) (response *http.Response, err erro
 	}
 
 	httpClient := http.Client{
-		Timeout: c.config.timeout,
+		Timeout: c.config.GetTimeout(),
 		Transport: &http.Transport{
-			ResponseHeaderTimeout: c.config.timeout,
+			ResponseHeaderTimeout: c.config.GetTimeout(),
 			TLSClientConfig: &tls.Config{
 				MinVersion: tls.VersionTLS12,
 			},
@@ -189,8 +178,9 @@ func (c *Client) login() (err error) {
 	} else {
 		log.WithFields(log.Fields{
 			"keepAlive": responseJSON.KeepAlive,
-			"default":   c.keepAlive,
-		}).Error("Agent received invalid keep alive time at login, using default")
+			"current":   c.keepAlive,
+			"default":   c.config.KeepAlive,
+		}).Error("Agent received invalid keep alive time at login, using current")
 	}
 
 	c.results <- true
@@ -216,7 +206,7 @@ func (c *Client) start() {
 				// error during login attempt, log error and
 				// reset timer to retry timer value
 				log.WithError(err).Error("Agent got error during method login")
-				timer.Reset(retryTimer * time.Second)
+				timer.Reset(c.config.GetRetryTimer())
 				break
 			}
 			timer.Reset(c.keepAlive)
@@ -256,22 +246,12 @@ func (c *Client) Results() chan bool {
 	return c.results
 }
 
-// SetURL sets the identity service url
-func (c *Client) SetURL(url string) {
-	c.config.url = url
-}
-
-// SetRealm sets the identity service url
-func (c *Client) SetRealm(realm string) {
-	c.config.realm = realm
-}
-
 // NewClient returns a new Client
-func NewClient() *Client {
+func NewClient(config *config.Config) *Client {
 	return &Client{
 		results:   make(chan bool),
 		done:      make(chan struct{}),
-		keepAlive: 5 * time.Minute,
-		config:    Config{timeout: 30 * time.Second},
+		keepAlive: config.GetKeepAlive(),
+		config:    config,
 	}
 }
