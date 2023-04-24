@@ -18,6 +18,24 @@ type Agent struct {
 	closed chan struct{}
 }
 
+// logTND logs if we are connected to a trusted network
+func (a *Agent) logTND(trusted bool) {
+	if !trusted {
+		log.Info("Agent is not connected to a trusted network")
+		return
+	}
+	log.Info("Agent is connected to a trusted network")
+}
+
+// logLogin logs if the identity agent is logged in
+func (a *Agent) logLogin(loggedIn bool) {
+	if !loggedIn {
+		log.Info("Agent logged out")
+		return
+	}
+	log.Info("Agent logged in successfully")
+}
+
 // notifyTND notifies the user if we are connected to a trusted network
 func (a *Agent) notifyTND(trusted bool) {
 	if !trusted {
@@ -93,6 +111,7 @@ func (a *Agent) start() {
 				log.WithField("trusted", r).
 					Debug("Agent got trusted network change")
 				trusted = r
+				a.logTND(trusted)
 				a.notifyTND(trusted)
 				if trusted {
 					// switched to trusted network,
@@ -115,6 +134,7 @@ func (a *Agent) start() {
 			if r != loggedIn {
 				log.WithField("loggedIn", r).Debug("Agent got login change")
 				loggedIn = r
+				a.logLogin(loggedIn)
 				a.notifyLogin(loggedIn)
 			}
 
