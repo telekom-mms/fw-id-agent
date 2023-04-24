@@ -18,11 +18,15 @@ type Agent struct {
 	login  chan bool
 	done   chan struct{}
 	closed chan struct{}
+
+	// trusted network and login status
+	trusted  bool
+	loggedIn bool
 }
 
 // logTND logs if we are connected to a trusted network
-func (a *Agent) logTND(trusted bool) {
-	if !trusted {
+func (a *Agent) logTND() {
+	if !a.trusted {
 		log.Info("Agent is not connected to a trusted network")
 		return
 	}
@@ -30,8 +34,8 @@ func (a *Agent) logTND(trusted bool) {
 }
 
 // logLogin logs if the identity agent is logged in
-func (a *Agent) logLogin(loggedIn bool) {
-	if !loggedIn {
+func (a *Agent) logLogin() {
+	if !a.loggedIn {
 		log.Info("Agent logged out")
 		return
 	}
@@ -39,8 +43,8 @@ func (a *Agent) logLogin(loggedIn bool) {
 }
 
 // notifyTND notifies the user if we are connected to a trusted network
-func (a *Agent) notifyTND(trusted bool) {
-	if !trusted {
+func (a *Agent) notifyTND() {
+	if !a.trusted {
 		notify.Notify("No Trusted Network", "No trusted network detected")
 		return
 	}
@@ -48,8 +52,8 @@ func (a *Agent) notifyTND(trusted bool) {
 }
 
 // notifyLogin notifies the user if the identity agent is logged in
-func (a *Agent) notifyLogin(loggedIn bool) {
-	if !loggedIn {
+func (a *Agent) notifyLogin() {
+	if !a.loggedIn {
 		notify.Notify("Identity Agent Logout", "Identity Agent logged out")
 		return
 	}
@@ -73,6 +77,7 @@ func (a *Agent) startClient() {
 	if a.client != nil {
 		return
 	}
+	a.loggedIn = false
 	a.client = client.NewClient(a.config)
 	a.client.Start()
 	a.login = a.client.Results()
@@ -83,18 +88,19 @@ func (a *Agent) stopClient() {
 	if a.client == nil {
 		return
 	}
+	a.loggedIn = false
 	a.client.Stop()
 	a.client = nil
 	a.login = nil
 }
 
 // handleRequest handles an api request
-func (a *Agent) handleRequest(request *api.Request, trusted, loggedIn bool) {
+func (a *Agent) handleRequest(request *api.Request) {
 	switch request.Type() {
 	case api.TypeQuery:
 		status := status.New()
-		status.TrustedNetwork = trusted
-		status.LoggedIn = loggedIn
+		status.TrustedNetwork = a.trusted
+		status.LoggedIn = a.loggedIn
 		status.Config = a.config
 		b, err := status.JSON()
 		if err != nil {
@@ -104,7 +110,7 @@ func (a *Agent) handleRequest(request *api.Request, trusted, loggedIn bool) {
 		go request.Close()
 	case api.TypeRelogin:
 		log.Info("Agent got relogin request from user")
-		if !trusted {
+		if !a.trusted {
 			// no trusted network, abort
 			log.Error("Agent not connected to a trusted network, not restarting client")
 			request.Error("Not connected to a trusted network")
@@ -134,9 +140,12 @@ func (a *Agent) start() {
 	a.tnd.Start()
 	defer a.tnd.Stop()
 
+	// start sleep monitor
+	sleepMon := NewSleepMon()
+	sleepMon.Start()
+	defer sleepMon.Stop()
+
 	// start main loop
-	trusted := false
-	loggedIn := false
 	for {
 		select {
 		case r, ok := <-a.tnd.Results():
@@ -146,13 +155,13 @@ func (a *Agent) start() {
 			}
 
 			// check if trusted state changed
-			if r != trusted {
+			if r != a.trusted {
 				log.WithField("trusted", r).
 					Debug("Agent got trusted network change")
-				trusted = r
-				a.logTND(trusted)
-				a.notifyTND(trusted)
-				if trusted {
+				a.trusted = r
+				a.logTND()
+				a.notifyTND()
+				if a.trusted {
 					// switched to trusted network,
 					// start identity agent client
 					a.startClient()
@@ -170,11 +179,11 @@ func (a *Agent) start() {
 			}
 
 			// check if logged in state changed
-			if r != loggedIn {
+			if r != a.loggedIn {
 				log.WithField("loggedIn", r).Debug("Agent got login change")
-				loggedIn = r
-				a.logLogin(loggedIn)
-				a.notifyLogin(loggedIn)
+				a.loggedIn = r
+				a.logLogin()
+				a.notifyLogin()
 			}
 
 		case r, ok := <-server.Requests():
@@ -182,7 +191,23 @@ func (a *Agent) start() {
 				log.Debug("Agent server requests channel closed")
 				return
 			}
-			a.handleRequest(r, trusted, loggedIn)
+			a.handleRequest(r)
+
+		case sleep, ok := <-sleepMon.Events():
+			if !ok {
+				log.Debug("Agent SleepMon events channel closed")
+				return
+			}
+
+			// ignore wake-up event
+			if !sleep {
+				break
+			}
+
+			// reset trusted network status and stop client
+			log.Info("Agent got sleep event, resetting trusted network status and stopping client")
+			a.trusted = false
+			a.stopClient()
 
 		case <-a.done:
 			log.Debug("Agent stopping")
