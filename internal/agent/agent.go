@@ -13,6 +13,7 @@ import (
 // Agent is the firewall identity Agent
 type Agent struct {
 	config *config.Config
+	server *api.Server
 	tnd    *trustnet.TND
 	client *client.Client
 	login  chan bool
@@ -131,9 +132,8 @@ func (a *Agent) start() {
 	defer close(a.closed)
 
 	// start api server
-	server := api.NewServer(api.GetUserSocketFile())
-	server.Start()
-	defer server.Stop()
+	a.server.Start()
+	defer a.server.Stop()
 
 	// start trusted network detection
 	a.initTND()
@@ -186,7 +186,7 @@ func (a *Agent) start() {
 				a.notifyLogin()
 			}
 
-		case r, ok := <-server.Requests():
+		case r, ok := <-a.server.Requests():
 			if !ok {
 				log.Debug("Agent server requests channel closed")
 				return
@@ -230,9 +230,11 @@ func (a *Agent) Stop() {
 
 // NewAgent returns a new agent
 func NewAgent(config *config.Config) *Agent {
+	server := api.NewServer(api.GetUserSocketFile())
 	tnd := trustnet.NewTND()
 	return &Agent{
 		config: config,
+		server: server,
 		tnd:    tnd,
 		done:   make(chan struct{}),
 		closed: make(chan struct{}),
