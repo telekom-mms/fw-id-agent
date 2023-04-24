@@ -1,9 +1,11 @@
 package agent
 
 import (
+	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/client"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/notify"
+	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
 	"github.com/T-Systems-MMS/tnd/pkg/trustnet"
 	log "github.com/sirupsen/logrus"
 )
@@ -86,9 +88,46 @@ func (a *Agent) stopClient() {
 	a.login = nil
 }
 
+// handleRequest handles an api request
+func (a *Agent) handleRequest(request *api.Request, trusted, loggedIn bool) {
+	switch request.Type() {
+	case api.TypeQuery:
+		status := status.New()
+		status.TrustedNetwork = trusted
+		status.LoggedIn = loggedIn
+		status.Config = a.config
+		b, err := status.JSON()
+		if err != nil {
+			log.WithError(err).Fatal("Agent could not convert status to json")
+		}
+		request.Reply(b)
+		go request.Close()
+	case api.TypeRelogin:
+		log.Info("Agent got relogin request from user")
+		if !trusted {
+			// no trusted network, abort
+			log.Error("Agent not connected to a trusted network, not restarting client")
+			request.Error("Not connected to a trusted network")
+			go request.Close()
+			return
+		}
+
+		// trusted network, restart client
+		log.Info("Agent is restarting client")
+		a.stopClient()
+		a.startClient()
+		go request.Close()
+	}
+}
+
 // start starts the agent's main loop
 func (a *Agent) start() {
 	defer close(a.closed)
+
+	// start api server
+	server := api.NewServer(api.GetUserSocketFile())
+	server.Start()
+	defer server.Stop()
 
 	// start trusted network detection
 	a.initTND()
@@ -137,6 +176,13 @@ func (a *Agent) start() {
 				a.logLogin(loggedIn)
 				a.notifyLogin(loggedIn)
 			}
+
+		case r, ok := <-server.Requests():
+			if !ok {
+				log.Debug("Agent server requests channel closed")
+				return
+			}
+			a.handleRequest(r, trusted, loggedIn)
 
 		case <-a.done:
 			log.Debug("Agent stopping")
