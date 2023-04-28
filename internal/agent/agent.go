@@ -128,23 +128,36 @@ func (a *Agent) stopClient() {
 func (a *Agent) handleRequest(request *api.Request) {
 	switch request.Type() {
 	case api.TypeQuery:
-		status := status.New()
-		status.TrustedNetwork = a.trusted
-		status.LoggedIn = a.loggedIn
-		status.Config = a.config
-		b, err := status.JSON()
+		// create status
+		s := status.New()
+		s.TrustedNetwork = a.trusted
+		s.LoggedIn = a.loggedIn
+		s.Config = a.config
+		s.KerberosTGT = status.KerberosTicket{
+			StartTime: a.tgtStartTime.Unix(),
+			EndTime:   a.tgtEndTime.Unix(),
+		}
+
+		// convert status to json and set it as reply
+		b, err := s.JSON()
 		if err != nil {
 			log.WithError(err).Fatal("Agent could not convert status to json")
 		}
 		request.Reply(b)
+
+		// send reply and close request
 		go request.Close()
+
 	case api.TypeRelogin:
 		log.Info("Agent got relogin request from user")
 		if !a.trusted {
 			// no trusted network, abort
 			log.Error("Agent not connected to a trusted network, not restarting client")
 			request.Error("Not connected to a trusted network")
+
+			// send reply and close request
 			go request.Close()
+
 			return
 		}
 
@@ -152,6 +165,8 @@ func (a *Agent) handleRequest(request *api.Request) {
 		log.Info("Agent is restarting client")
 		a.stopClient()
 		a.startClient()
+
+		// send reply and close request
 		go request.Close()
 	}
 }
