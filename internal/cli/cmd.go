@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/agent"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
@@ -95,10 +96,30 @@ func getStatus() {
 		return
 	}
 
-	fmt.Printf("Trusted Network: %t\n", status.TrustedNetwork)
-	fmt.Printf("Logged In:       %t\n", status.LoggedIn)
+	fmt.Printf("Trusted Network:    %t\n", status.TrustedNetwork)
+	fmt.Printf("Logged In:          %t\n", status.LoggedIn)
 	if verbose {
-		fmt.Printf("Config:          %#v\n", *status.Config)
+		// kerberos info
+		fmt.Printf("Kerberos TGT:\n")
+
+		// kerberos tgt start time
+		tgtStartTime := time.Unix(status.KerberosTGT.StartTime, 0)
+		if tgtStartTime.IsZero() {
+			fmt.Printf("- StartTime:        0\n")
+		} else {
+			fmt.Printf("- TGT Start:        %s\n", tgtStartTime)
+		}
+
+		// kerberos tgt end time
+		tgtEndTime := time.Unix(status.KerberosTGT.EndTime, 0)
+		if tgtEndTime.IsZero() {
+			fmt.Printf("- EndTime:          0\n")
+		} else {
+			fmt.Printf("- EndTime:          %s\n", tgtEndTime)
+		}
+
+		// agent config
+		fmt.Printf("Config:             %#v\n", *status.Config)
 	}
 }
 
