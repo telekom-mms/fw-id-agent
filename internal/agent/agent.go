@@ -1,9 +1,12 @@
 package agent
 
 import (
+	"time"
+
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/client"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	"github.com/T-Systems-MMS/fw-id-agent/internal/krbmon"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/notify"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
 	"github.com/T-Systems-MMS/tnd/pkg/trustnet"
@@ -14,11 +17,19 @@ import (
 type Agent struct {
 	config *config.Config
 	server *api.Server
+	ccache *krbmon.CCacheMon
 	tnd    *trustnet.TND
 	client *client.Client
 	login  chan bool
 	done   chan struct{}
 	closed chan struct{}
+
+	// last ccache update
+	ccacheUp *krbmon.CCacheUpdate
+
+	// kerberos tgt times
+	tgtStartTime time.Time
+	tgtEndTime   time.Time
 
 	// trusted network and login status
 	trusted  bool
@@ -135,6 +146,10 @@ func (a *Agent) start() {
 	a.server.Start()
 	defer a.server.Stop()
 
+	// start ccache monitor
+	a.ccache.Start()
+	defer a.ccache.Stop()
+
 	// start trusted network detection
 	a.initTND()
 	a.tnd.Start()
@@ -186,6 +201,35 @@ func (a *Agent) start() {
 				a.notifyLogin()
 			}
 
+		case u, ok := <-a.ccache.Updates():
+			if !ok {
+				log.Debug("Agent ccache updates channel closed")
+				return
+			}
+
+			// handle update
+			if tgt := u.GetTGT(a.config.Realm); tgt != nil {
+				// check if tgt changed
+				if tgt.StartTime.Equal(a.tgtStartTime) &&
+					tgt.EndTime.Equal(a.tgtEndTime) {
+					// tgt did not change
+					break
+				}
+
+				// tgt changed
+				log.WithFields(log.Fields{
+					"StartTime": tgt.StartTime,
+					"EndTime":   tgt.EndTime,
+				}).Debug("Agent got updated kerberos TGT")
+
+				// save start and end time
+				a.tgtStartTime = tgt.StartTime
+				a.tgtEndTime = tgt.EndTime
+
+				// save update
+				a.ccacheUp = u
+			}
+
 		case r, ok := <-a.server.Requests():
 			if !ok {
 				log.Debug("Agent server requests channel closed")
@@ -231,10 +275,12 @@ func (a *Agent) Stop() {
 // NewAgent returns a new agent
 func NewAgent(config *config.Config) *Agent {
 	server := api.NewServer(api.GetUserSocketFile())
+	ccache := krbmon.NewCCacheMon()
 	tnd := trustnet.NewTND()
 	return &Agent{
 		config: config,
 		server: server,
+		ccache: ccache,
 		tnd:    tnd,
 		done:   make(chan struct{}),
 		closed: make(chan struct{}),
