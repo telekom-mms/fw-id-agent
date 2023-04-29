@@ -18,14 +18,16 @@ type Agent struct {
 	config *config.Config
 	server *api.Server
 	ccache *krbmon.CCacheMon
+	krbcfg *krbmon.ConfMon
 	tnd    *trustnet.TND
 	client *client.Client
 	login  chan bool
 	done   chan struct{}
 	closed chan struct{}
 
-	// last ccache update
+	// last ccache and config update
 	ccacheUp *krbmon.CCacheUpdate
+	krbcfgUp *krbmon.ConfUpdate
 
 	// kerberos tgt times
 	tgtStartTime time.Time
@@ -150,6 +152,10 @@ func (a *Agent) start() {
 	a.ccache.Start()
 	defer a.ccache.Stop()
 
+	// start kerberos config monitor
+	a.krbcfg.Start()
+	defer a.krbcfg.Stop()
+
 	// start trusted network detection
 	a.initTND()
 	a.tnd.Start()
@@ -230,6 +236,18 @@ func (a *Agent) start() {
 				a.ccacheUp = u
 			}
 
+		case u, ok := <-a.krbcfg.Updates():
+			if !ok {
+				log.Debug("Agent kerberos config updates channel closed")
+				return
+			}
+
+			// config changed
+			log.Debug("Agent got updated kerberos config")
+
+			// save update
+			a.krbcfgUp = u
+
 		case r, ok := <-a.server.Requests():
 			if !ok {
 				log.Debug("Agent server requests channel closed")
@@ -276,11 +294,13 @@ func (a *Agent) Stop() {
 func NewAgent(config *config.Config) *Agent {
 	server := api.NewServer(api.GetUserSocketFile())
 	ccache := krbmon.NewCCacheMon()
+	krbcfg := krbmon.NewConfMon()
 	tnd := trustnet.NewTND()
 	return &Agent{
 		config: config,
 		server: server,
 		ccache: ccache,
+		krbcfg: krbcfg,
 		tnd:    tnd,
 		done:   make(chan struct{}),
 		closed: make(chan struct{}),
