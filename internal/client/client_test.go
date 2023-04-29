@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	krbConfig "github.com/jcmturner/gokrb5/v8/config"
+	"github.com/jcmturner/gokrb5/v8/credentials"
 )
 
 func TestLogin(t *testing.T) {
@@ -15,7 +17,9 @@ func TestLogin(t *testing.T) {
 	defer server.Close()
 
 	config := &config.Config{ServiceURL: server.URL}
-	client := NewClient(config)
+	ccache := &credentials.CCache{}
+	krb5conf := krbConfig.New()
+	client := NewClient(config, ccache, krb5conf)
 	go func() {
 		defer close(client.results)
 		err := client.login()
@@ -38,7 +42,9 @@ func TestLoginNoResult(t *testing.T) {
 	defer server.Close()
 
 	config := &config.Config{ServiceURL: server.URL}
-	client := NewClient(config)
+	ccache := &credentials.CCache{}
+	krb5conf := krbConfig.New()
+	client := NewClient(config, ccache, krb5conf)
 	go func() {
 		defer close(client.results)
 		_ = client.login()
@@ -59,7 +65,9 @@ func TestLoginFailed(t *testing.T) {
 	defer server.Close()
 
 	config := &config.Config{ServiceURL: server.URL}
-	client := NewClient(config)
+	ccache := &credentials.CCache{}
+	krb5conf := krbConfig.New()
+	client := NewClient(config, ccache, krb5conf)
 	go func() {
 		defer close(client.results)
 		err := client.login()
@@ -82,7 +90,9 @@ func TestLogout(t *testing.T) {
 	defer server.Close()
 
 	config := &config.Config{ServiceURL: server.URL}
-	client := NewClient(config)
+	ccache := &credentials.CCache{}
+	krb5conf := krbConfig.New()
+	client := NewClient(config, ccache, krb5conf)
 	go func() {
 		defer close(client.results)
 		_ = client.login()

@@ -88,20 +88,36 @@ func (a *Agent) initTND() {
 
 // startClient starts the client
 func (a *Agent) startClient() {
+	// make sure client is not already running
 	if a.client != nil {
 		return
 	}
+
+	// make sure ccache is available
+	if a.ccacheUp == nil || a.ccacheUp.CCache == nil {
+		return
+	}
+
+	// make sure kerberos config is available
+	if a.krbcfgUp == nil || a.krbcfgUp.Config == nil {
+		return
+	}
+
+	// start new client
 	a.loggedIn = false
-	a.client = client.NewClient(a.config)
+	a.client = client.NewClient(a.config, a.ccacheUp.CCache, a.krbcfgUp.Config)
 	a.client.Start()
 	a.login = a.client.Results()
 }
 
 // stopClient stops the client
 func (a *Agent) stopClient() {
+	// make sure client is running
 	if a.client == nil {
 		return
 	}
+
+	// stop existing client
 	a.loggedIn = false
 	a.client.Stop()
 	a.client = nil
@@ -234,6 +250,15 @@ func (a *Agent) start() {
 
 				// save update
 				a.ccacheUp = u
+
+				// set ccache in existing client or check if we
+				// can start new client now
+				if a.client != nil {
+					a.client.SetCCache(u.CCache)
+				}
+				if a.trusted {
+					a.startClient()
+				}
 			}
 
 		case u, ok := <-a.krbcfg.Updates():
@@ -247,6 +272,15 @@ func (a *Agent) start() {
 
 			// save update
 			a.krbcfgUp = u
+
+			// set config in existing client or check if we can
+			// start a new client now
+			if a.client != nil {
+				a.client.SetKrb5Conf(u.Config)
+			}
+			if a.trusted {
+				a.startClient()
+			}
 
 		case r, ok := <-a.server.Requests():
 			if !ok {
