@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/T-Systems-MMS/fw-id-agent/internal/agent"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
 	log "github.com/sirupsen/logrus"
@@ -19,9 +20,6 @@ var (
 
 	// json specifies whether output should be formatted as json
 	json = false
-
-	// version is the CLI version, to be set at compile time
-	version = "unknown"
 )
 
 // parseCommandLine parses the command line arguments
@@ -60,7 +58,7 @@ func parseCommandLine() {
 
 	// print version?
 	if *ver {
-		fmt.Println(version)
+		fmt.Println(agent.Version)
 		os.Exit(0)
 	}
 

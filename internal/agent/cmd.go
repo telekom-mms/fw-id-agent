@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	// version is the agent version, to be set at compile time
-	version = "unknown"
+	// Version is the agent version, to be set at compile time
+	Version = "unknown"
 )
 
 // command line argument names
@@ -83,7 +83,7 @@ func Run() {
 
 	// print version?
 	if *ver {
-		fmt.Println(version)
+		fmt.Println(Version)
 		os.Exit(0)
 	}
 
