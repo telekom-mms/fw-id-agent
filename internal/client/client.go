@@ -7,9 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"os/user"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
@@ -26,6 +24,12 @@ type Client struct {
 	keepAlive time.Duration
 	results   chan bool
 	done      chan struct{}
+
+	// current kerberos ccache and config
+	// protected by mutex
+	mutex    sync.Mutex
+	ccache   *credentials.CCache
+	krb5conf *krbConfig.Config
 }
 
 // Error is an identity agent client error
@@ -45,35 +49,24 @@ type LoginResponse struct {
 }
 
 func (c *Client) doServiceRequest(api string) (response *http.Response, err error) {
-	serviceURL := c.config.ServiceURL + api
-	var currentUser *user.User
-	currentUser, err = user.Current()
-	if err != nil || currentUser == nil {
-		err = fmt.Errorf("%d: error determining user: %w", UserNotSet, err)
+	if c.GetCCache() == nil {
+		err = fmt.Errorf("%d: error creating %s request: kerberos CCache not set", TokenError, api)
 		return
 	}
-	var request *http.Request
-	request, err = http.NewRequest("POST", serviceURL, nil)
+
+	if c.GetKrb5Conf() == nil {
+		err = fmt.Errorf("%d: error creating %s request: kerberos config not set", TokenError, api)
+		return
+	}
+
+	serviceURL := c.config.ServiceURL + api
+	request, err := http.NewRequest("POST", serviceURL, nil)
 	if err != nil {
 		err = fmt.Errorf("%d: error creating %s request: %w", TokenError, api, err)
 		return
 	}
 
-	cfg, err := krbConfig.Load("/etc/krb5.conf")
-	if err != nil {
-		err = fmt.Errorf("%d: could not load KRB5 configuration: %w", TokenError, err)
-		return
-	}
-	cCacheFile, err := getCredentialCacheFilename()
-	if err != nil {
-		return
-	}
-	cCache, err := credentials.LoadCCache(cCacheFile)
-	if err != nil {
-		err = fmt.Errorf("%d: could not load credential cache: %w", TokenError, err)
-		return
-	}
-	krbC, err := krbClient.NewFromCCache(cCache, cfg)
+	krbC, err := krbClient.NewFromCCache(c.GetCCache(), c.GetKrb5Conf())
 	if err != nil {
 		err = fmt.Errorf("%d: could not create KRB5 client: %w", TokenError, err)
 		return
@@ -105,41 +98,6 @@ func (c *Client) doServiceRequest(api string) (response *http.Response, err erro
 	}
 
 	return
-}
-
-// createCredentialCacheEnvVar creates an expected environment variable value
-// for the credential cache based on the current user ID
-func createCredentialCacheEnvVar() string {
-	osUser, err := user.Current()
-	if err != nil {
-		log.WithError(err).
-			Error("Agent could not create credential cache environment variable value")
-		return ""
-	}
-	return fmt.Sprintf("FILE:/tmp/krb5cc_%s", osUser.Uid)
-}
-
-func getCredentialCacheFilename() (string, error) {
-	envVar := os.Getenv("KRB5CCNAME")
-	if envVar == "" {
-		newEnv := createCredentialCacheEnvVar()
-		log.WithField("new", newEnv).
-			Debug("Agent could not get environment variable KRB5CCNAME, setting it")
-		envVar = newEnv
-	}
-	if !strings.HasPrefix(envVar, "FILE:") {
-		newEnv := createCredentialCacheEnvVar()
-		log.WithFields(log.Fields{
-			"old": envVar,
-			"new": newEnv,
-		}).Error("Agent got invalid environment variable KRB5CCNAME, resetting it")
-		envVar = newEnv
-	}
-	if envVar == "" {
-		// environment variable still invalid
-		return "", fmt.Errorf("%d: environment variable KRB5CCNAME is not set", TokenError)
-	}
-	return strings.TrimPrefix(envVar, "FILE:"), nil
 }
 
 // login sends a login request to the identity service
@@ -246,12 +204,46 @@ func (c *Client) Results() chan bool {
 	return c.results
 }
 
+// SetCCache sets the kerberos CCache in the client
+func (c *Client) SetCCache(ccache *credentials.CCache) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.ccache = ccache
+}
+
+// GetCCache returns the kerberos CCache in the client
+func (c *Client) GetCCache() *credentials.CCache {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	return c.ccache
+}
+
+// SetKrb5Conf sets the kerberos config in the client
+func (c *Client) SetKrb5Conf(conf *krbConfig.Config) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.krb5conf = conf
+}
+
+// GetKrb5Conf returns the kerberos config in the client
+func (c *Client) GetKrb5Conf() *krbConfig.Config {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	return c.krb5conf
+}
+
 // NewClient returns a new Client
-func NewClient(config *config.Config) *Client {
+func NewClient(config *config.Config, ccache *credentials.CCache, krb5conf *krbConfig.Config) *Client {
 	return &Client{
 		results:   make(chan bool),
 		done:      make(chan struct{}),
 		keepAlive: config.GetKeepAlive(),
 		config:    config,
+		ccache:    ccache,
+		krb5conf:  krb5conf,
 	}
 }

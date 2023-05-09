@@ -1,9 +1,12 @@
 package agent
 
 import (
+	"time"
+
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/client"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	"github.com/T-Systems-MMS/fw-id-agent/internal/krbmon"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/notify"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
 	"github.com/T-Systems-MMS/tnd/pkg/trustnet"
@@ -13,11 +16,22 @@ import (
 // Agent is the firewall identity Agent
 type Agent struct {
 	config *config.Config
+	server *api.Server
+	ccache *krbmon.CCacheMon
+	krbcfg *krbmon.ConfMon
 	tnd    *trustnet.TND
 	client *client.Client
 	login  chan bool
 	done   chan struct{}
 	closed chan struct{}
+
+	// last ccache and config update
+	ccacheUp *krbmon.CCacheUpdate
+	krbcfgUp *krbmon.ConfUpdate
+
+	// kerberos tgt times
+	tgtStartTime time.Time
+	tgtEndTime   time.Time
 
 	// trusted network and login status
 	trusted  bool
@@ -74,20 +88,36 @@ func (a *Agent) initTND() {
 
 // startClient starts the client
 func (a *Agent) startClient() {
+	// make sure client is not already running
 	if a.client != nil {
 		return
 	}
+
+	// make sure ccache is available
+	if a.ccacheUp == nil || a.ccacheUp.CCache == nil {
+		return
+	}
+
+	// make sure kerberos config is available
+	if a.krbcfgUp == nil || a.krbcfgUp.Config == nil {
+		return
+	}
+
+	// start new client
 	a.loggedIn = false
-	a.client = client.NewClient(a.config)
+	a.client = client.NewClient(a.config, a.ccacheUp.CCache, a.krbcfgUp.Config)
 	a.client.Start()
 	a.login = a.client.Results()
 }
 
 // stopClient stops the client
 func (a *Agent) stopClient() {
+	// make sure client is running
 	if a.client == nil {
 		return
 	}
+
+	// stop existing client
 	a.loggedIn = false
 	a.client.Stop()
 	a.client = nil
@@ -98,23 +128,36 @@ func (a *Agent) stopClient() {
 func (a *Agent) handleRequest(request *api.Request) {
 	switch request.Type() {
 	case api.TypeQuery:
-		status := status.New()
-		status.TrustedNetwork = a.trusted
-		status.LoggedIn = a.loggedIn
-		status.Config = a.config
-		b, err := status.JSON()
+		// create status
+		s := status.New()
+		s.TrustedNetwork = a.trusted
+		s.LoggedIn = a.loggedIn
+		s.Config = a.config
+		s.KerberosTGT = status.KerberosTicket{
+			StartTime: a.tgtStartTime.Unix(),
+			EndTime:   a.tgtEndTime.Unix(),
+		}
+
+		// convert status to json and set it as reply
+		b, err := s.JSON()
 		if err != nil {
 			log.WithError(err).Fatal("Agent could not convert status to json")
 		}
 		request.Reply(b)
+
+		// send reply and close request
 		go request.Close()
+
 	case api.TypeRelogin:
 		log.Info("Agent got relogin request from user")
 		if !a.trusted {
 			// no trusted network, abort
 			log.Error("Agent not connected to a trusted network, not restarting client")
 			request.Error("Not connected to a trusted network")
+
+			// send reply and close request
 			go request.Close()
+
 			return
 		}
 
@@ -122,6 +165,8 @@ func (a *Agent) handleRequest(request *api.Request) {
 		log.Info("Agent is restarting client")
 		a.stopClient()
 		a.startClient()
+
+		// send reply and close request
 		go request.Close()
 	}
 }
@@ -131,9 +176,16 @@ func (a *Agent) start() {
 	defer close(a.closed)
 
 	// start api server
-	server := api.NewServer(api.GetUserSocketFile())
-	server.Start()
-	defer server.Stop()
+	a.server.Start()
+	defer a.server.Stop()
+
+	// start ccache monitor
+	a.ccache.Start()
+	defer a.ccache.Stop()
+
+	// start kerberos config monitor
+	a.krbcfg.Start()
+	defer a.krbcfg.Stop()
 
 	// start trusted network detection
 	a.initTND()
@@ -186,7 +238,66 @@ func (a *Agent) start() {
 				a.notifyLogin()
 			}
 
-		case r, ok := <-server.Requests():
+		case u, ok := <-a.ccache.Updates():
+			if !ok {
+				log.Debug("Agent ccache updates channel closed")
+				return
+			}
+
+			// handle update
+			if tgt := u.GetTGT(a.config.Realm); tgt != nil {
+				// check if tgt changed
+				if tgt.StartTime.Equal(a.tgtStartTime) &&
+					tgt.EndTime.Equal(a.tgtEndTime) {
+					// tgt did not change
+					break
+				}
+
+				// tgt changed
+				log.WithFields(log.Fields{
+					"StartTime": tgt.StartTime,
+					"EndTime":   tgt.EndTime,
+				}).Debug("Agent got updated kerberos TGT")
+
+				// save start and end time
+				a.tgtStartTime = tgt.StartTime
+				a.tgtEndTime = tgt.EndTime
+
+				// save update
+				a.ccacheUp = u
+
+				// set ccache in existing client or check if we
+				// can start new client now
+				if a.client != nil {
+					a.client.SetCCache(u.CCache)
+				}
+				if a.trusted {
+					a.startClient()
+				}
+			}
+
+		case u, ok := <-a.krbcfg.Updates():
+			if !ok {
+				log.Debug("Agent kerberos config updates channel closed")
+				return
+			}
+
+			// config changed
+			log.Debug("Agent got updated kerberos config")
+
+			// save update
+			a.krbcfgUp = u
+
+			// set config in existing client or check if we can
+			// start a new client now
+			if a.client != nil {
+				a.client.SetKrb5Conf(u.Config)
+			}
+			if a.trusted {
+				a.startClient()
+			}
+
+		case r, ok := <-a.server.Requests():
 			if !ok {
 				log.Debug("Agent server requests channel closed")
 				return
@@ -230,9 +341,15 @@ func (a *Agent) Stop() {
 
 // NewAgent returns a new agent
 func NewAgent(config *config.Config) *Agent {
+	server := api.NewServer(api.GetUserSocketFile())
+	ccache := krbmon.NewCCacheMon()
+	krbcfg := krbmon.NewConfMon()
 	tnd := trustnet.NewTND()
 	return &Agent{
 		config: config,
+		server: server,
+		ccache: ccache,
+		krbcfg: krbcfg,
 		tnd:    tnd,
 		done:   make(chan struct{}),
 		closed: make(chan struct{}),

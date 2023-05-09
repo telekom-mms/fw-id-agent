@@ -6,11 +6,18 @@ import (
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
 )
 
+// KerberosTicket is kerberos ticket info in the agent status
+type KerberosTicket struct {
+	StartTime int64
+	EndTime   int64
+}
+
 // Status is the agent status
 type Status struct {
 	TrustedNetwork bool
 	LoggedIn       bool
 	Config         *config.Config
+	KerberosTGT    KerberosTicket
 }
 
 // JSON returns the Status as JSON
