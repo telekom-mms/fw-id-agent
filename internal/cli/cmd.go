@@ -37,7 +37,7 @@ func parseCommandLine() {
 	flag.Usage = func() {
 		cmd := os.Args[0]
 		w := flag.CommandLine.Output()
-		usage := func(f string, args ...interface{}) {
+		usage := func(f string, args ...any) {
 			_, err := fmt.Fprintf(w, f, args...)
 			if err != nil {
 				log.WithError(err).Fatal("CLI could not print usage")
@@ -67,7 +67,7 @@ func parseCommandLine() {
 	command = flag.Arg(0)
 	switch command {
 	case "status":
-		statusCmd.Parse(os.Args[2:])
+		_ = statusCmd.Parse(os.Args[2:])
 	case "relogin":
 	default:
 		flag.Usage()
