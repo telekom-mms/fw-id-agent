@@ -30,8 +30,7 @@ type Agent struct {
 	krbcfgUp *krbmon.ConfUpdate
 
 	// kerberos tgt times
-	tgtStartTime time.Time
-	tgtEndTime   time.Time
+	kerberosTGT status.KerberosTicket
 
 	// trusted network and login status
 	trustedNetwork status.TrustedNetwork
@@ -86,6 +85,14 @@ func (a *Agent) notifyLogin() {
 	notify.Notify("Identity Agent Login", "Identity Agent logged in successfully")
 }
 
+// handleKerberosTGTChange handles a change of the kerberos TGT times
+func (a *Agent) handleKerberosTGTChange() {
+	log.WithFields(log.Fields{
+		"StartTime": a.kerberosTGT.StartTime,
+		"EndTime":   a.kerberosTGT.EndTime,
+	}).Info("Kerberos TGT times changed")
+}
+
 // handleTrustedNetworkChange handles a change of the trusted network status
 func (a *Agent) handleTrustedNetworkChange() {
 	log.WithField("trustedNetwork", a.trustedNetwork).
@@ -121,6 +128,20 @@ func (a *Agent) handleLoginStateChange() {
 func (a *Agent) handleLastKeepAliveChange() {
 	log.WithField("lastKeepAlive", a.lastKeepAlive).
 		Info("Last keep-alive time changed")
+}
+
+// setKerberosTGT sets the kerberos TGT times
+func (a *Agent) setKerberosTGT(startTime, endTime int64) {
+	if startTime == a.kerberosTGT.StartTime &&
+		endTime == a.kerberosTGT.EndTime {
+		// ticket not changed
+		return
+	}
+
+	// ticket changed
+	a.kerberosTGT.StartTime = startTime
+	a.kerberosTGT.EndTime = endTime
+	a.handleKerberosTGTChange()
 }
 
 // setTrustedNetwork sets the trusted network status to "trusted" or "not trusted"
@@ -223,13 +244,10 @@ func (a *Agent) handleRequest(request *api.Request) {
 		// create status
 		s := status.New()
 		s.Config = a.config
-		s.KerberosTGT = status.KerberosTicket{
-			StartTime: a.tgtStartTime.Unix(),
-			EndTime:   a.tgtEndTime.Unix(),
-		}
 		s.TrustedNetwork = a.trustedNetwork
 		s.LoginState = a.loginState
 		s.LastKeepAlive = a.lastKeepAlive
+		s.KerberosTGT = a.kerberosTGT
 
 		// convert status to json and set it as reply
 		b, err := s.JSON()
@@ -339,35 +357,35 @@ func (a *Agent) start() {
 			}
 
 			// handle update
-			if tgt := u.GetTGT(a.config.Realm); tgt != nil {
-				// check if tgt changed
-				if tgt.StartTime.Equal(a.tgtStartTime) &&
-					tgt.EndTime.Equal(a.tgtEndTime) {
-					// tgt did not change
-					break
-				}
+			tgt := u.GetTGT(a.config.Realm)
+			if tgt == nil {
+				break
+			}
 
-				// tgt changed
-				log.WithFields(log.Fields{
-					"StartTime": tgt.StartTime,
-					"EndTime":   tgt.EndTime,
-				}).Debug("Agent got updated kerberos TGT")
+			// get start and end unix timestamps of tgt
+			startTime := tgt.StartTime.Unix()
+			endTime := tgt.EndTime.Unix()
 
-				// save start and end time
-				a.tgtStartTime = tgt.StartTime
-				a.tgtEndTime = tgt.EndTime
+			// check if tgt changed
+			if a.kerberosTGT.TimesEqual(startTime, endTime) {
+				// tgt did not change
+				break
+			}
 
-				// save update
-				a.ccacheUp = u
+			// tgt changed
+			// save start and end time
+			a.setKerberosTGT(startTime, endTime)
 
-				// set ccache in existing client or check if we
-				// can start new client now
-				if a.client != nil {
-					a.client.SetCCache(u.CCache)
-				}
-				if a.trustedNetwork.Trusted() {
-					a.startClient()
-				}
+			// save update
+			a.ccacheUp = u
+
+			// set ccache in existing client or check if we
+			// can start new client now
+			if a.client != nil {
+				a.client.SetCCache(u.CCache)
+			}
+			if a.trustedNetwork.Trusted() {
+				a.startClient()
 			}
 
 		case u, ok := <-a.krbcfg.Updates():

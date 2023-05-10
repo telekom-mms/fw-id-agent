@@ -74,6 +74,10 @@ type KerberosTicket struct {
 	EndTime   int64
 }
 
+func (k *KerberosTicket) TimesEqual(start, end int64) bool {
+	return k.StartTime == start && k.EndTime == end
+}
+
 // Status is the agent status
 type Status struct {
 	Config         *config.Config

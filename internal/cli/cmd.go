@@ -113,17 +113,17 @@ func getStatus() {
 		// kerberos tgt start time
 		tgtStartTime := time.Unix(status.KerberosTGT.StartTime, 0)
 		if tgtStartTime.IsZero() {
-			fmt.Printf("- StartTime:        0\n")
+			fmt.Printf("- Start Time:       0\n")
 		} else {
-			fmt.Printf("- TGT Start:        %s\n", tgtStartTime)
+			fmt.Printf("- Start Time:       %s\n", tgtStartTime)
 		}
 
 		// kerberos tgt end time
 		tgtEndTime := time.Unix(status.KerberosTGT.EndTime, 0)
 		if tgtEndTime.IsZero() {
-			fmt.Printf("- EndTime:          0\n")
+			fmt.Printf("- End Time:         0\n")
 		} else {
-			fmt.Printf("- EndTime:          %s\n", tgtEndTime)
+			fmt.Printf("- End Time:         %s\n", tgtEndTime)
 		}
 
 		// agent config
