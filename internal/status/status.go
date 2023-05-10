@@ -34,6 +34,40 @@ func (t TrustedNetwork) String() string {
 	return ""
 }
 
+// LoginState is the current login state
+type LoginState uint32
+
+// LoginState states
+const (
+	LoginStateUnknown LoginState = iota
+	LoginStateLoggedOut
+	LoginStateLoggingIn
+	LoginStateLoggedIn
+	LoginStateLoggingOut
+)
+
+// LoggedIn returns whether LoginState is state "logged in"
+func (l LoginState) LoggedIn() bool {
+	return l == LoginStateLoggedIn
+}
+
+// String returns l as string
+func (l LoginState) String() string {
+	switch l {
+	case LoginStateUnknown:
+		return "unknown"
+	case LoginStateLoggedOut:
+		return "logged out"
+	case LoginStateLoggingIn:
+		return "logging in"
+	case LoginStateLoggedIn:
+		return "logged in"
+	case LoginStateLoggingOut:
+		return "logging out"
+	}
+	return ""
+}
+
 // KerberosTicket is kerberos ticket info in the agent status
 type KerberosTicket struct {
 	StartTime int64
@@ -42,9 +76,9 @@ type KerberosTicket struct {
 
 // Status is the agent status
 type Status struct {
-	LoggedIn       bool
 	Config         *config.Config
 	TrustedNetwork TrustedNetwork
+	LoginState     LoginState
 	KerberosTGT    KerberosTicket
 }
 

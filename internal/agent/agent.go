@@ -21,7 +21,7 @@ type Agent struct {
 	krbcfg *krbmon.ConfMon
 	tnd    *trustnet.TND
 	client *client.Client
-	login  chan bool
+	login  chan status.LoginState
 	done   chan struct{}
 	closed chan struct{}
 
@@ -34,8 +34,9 @@ type Agent struct {
 	tgtEndTime   time.Time
 
 	// trusted network and login status
-	loggedIn       bool
 	trustedNetwork status.TrustedNetwork
+	loginState     status.LoginState
+	loggedIn       bool
 }
 
 // logTND logs if we are connected to a trusted network
@@ -90,6 +91,29 @@ func (a *Agent) handleTrustedNetworkChange() {
 	a.notifyTND()
 }
 
+// handleLoginStateChange handles a change of the login state
+func (a *Agent) handleLoginStateChange() {
+	log.WithField("loginState", a.loginState).
+		Info("Login state changed")
+
+	// if we switched from "logged in" to "logged out" or from "logged out"
+	// to "logged in" log the change and notify user
+	switch a.loginState {
+	case status.LoginStateLoggedOut:
+		if a.loggedIn {
+			a.loggedIn = false
+			a.logLogin()
+			a.notifyLogin()
+		}
+	case status.LoginStateLoggedIn:
+		if !a.loggedIn {
+			a.loggedIn = true
+			a.logLogin()
+			a.notifyLogin()
+		}
+	}
+}
+
 // setTrustedNetwork sets the trusted network status to "trusted" or "not trusted"
 func (a *Agent) setTrustedNetwork(trusted bool) {
 	// convert bool to trusted network status
@@ -107,6 +131,18 @@ func (a *Agent) setTrustedNetwork(trusted bool) {
 	// status changed
 	a.trustedNetwork = trustedNetwork
 	a.handleTrustedNetworkChange()
+}
+
+// setLoginState sets the login state
+func (a *Agent) setLoginState(loginState status.LoginState) {
+	if loginState == a.loginState {
+		// state not changed
+		return
+	}
+
+	// state changed
+	a.loginState = loginState
+	a.handleLoginStateChange()
 }
 
 // initTND initializes the trusted network detection from the config
@@ -139,7 +175,6 @@ func (a *Agent) startClient() {
 	}
 
 	// start new client
-	a.loggedIn = false
 	a.client = client.NewClient(a.config, a.ccacheUp.CCache, a.krbcfgUp.Config)
 	a.client.Start()
 	a.login = a.client.Results()
@@ -153,10 +188,11 @@ func (a *Agent) stopClient() {
 	}
 
 	// stop existing client
-	a.loggedIn = false
+	a.setLoginState(status.LoginStateLoggingOut)
 	a.client.Stop()
 	a.client = nil
 	a.login = nil
+	a.setLoginState(status.LoginStateLoggedOut)
 }
 
 // handleRequest handles an api request
@@ -165,13 +201,13 @@ func (a *Agent) handleRequest(request *api.Request) {
 	case api.TypeQuery:
 		// create status
 		s := status.New()
-		s.LoggedIn = a.loggedIn
 		s.Config = a.config
 		s.KerberosTGT = status.KerberosTicket{
 			StartTime: a.tgtStartTime.Unix(),
 			EndTime:   a.tgtEndTime.Unix(),
 		}
 		s.TrustedNetwork = a.trustedNetwork
+		s.LoginState = a.loginState
 
 		// convert status to json and set it as reply
 		b, err := s.JSON()
@@ -232,8 +268,10 @@ func (a *Agent) start() {
 	sleepMon.Start()
 	defer sleepMon.Stop()
 
-	// set trusted network status to "not trusted"
+	// set trusted network status to "not trusted" and
+	// login state to "logged out"
 	a.setTrustedNetwork(false)
+	a.setLoginState(status.LoginStateLoggedOut)
 
 	// start main loop
 	for {
@@ -263,13 +301,8 @@ func (a *Agent) start() {
 				return
 			}
 
-			// check if logged in state changed
-			if r != a.loggedIn {
-				log.WithField("loggedIn", r).Debug("Agent got login change")
-				a.loggedIn = r
-				a.logLogin()
-				a.notifyLogin()
-			}
+			// update login state
+			a.setLoginState(r)
 
 		case u, ok := <-a.ccache.Updates():
 			if !ok {

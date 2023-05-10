@@ -27,7 +27,7 @@ func TestLogin(t *testing.T) {
 			t.Errorf("got error from calling login: %v", err)
 		}
 		r := <-client.Results()
-		if !r {
+		if !r.LoggedIn() {
 			t.Errorf("login result is false")
 		}
 		if client.keepAlive != 42*time.Minute {
@@ -49,7 +49,7 @@ func TestLoginNoResult(t *testing.T) {
 		defer close(client.results)
 		_ = client.login()
 		r := <-client.Results()
-		if !r {
+		if !r.LoggedIn() {
 			t.Errorf("login result is false")
 		}
 		if client.keepAlive != 5*time.Minute {
@@ -75,7 +75,7 @@ func TestLoginFailed(t *testing.T) {
 			t.Errorf("got no error")
 		}
 		r := <-client.Results()
-		if !r {
+		if !r.LoggedIn() {
 			t.Errorf("login result is true")
 		}
 		if client.keepAlive != 5*time.Minute {
@@ -97,7 +97,7 @@ func TestLogout(t *testing.T) {
 		defer close(client.results)
 		_ = client.login()
 		r := <-client.Results()
-		if r {
+		if r.LoggedIn() {
 			t.Errorf("logout result is not false")
 		}
 	}()
