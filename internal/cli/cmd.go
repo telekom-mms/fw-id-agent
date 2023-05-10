@@ -127,7 +127,11 @@ func getStatus() {
 		}
 
 		// agent config
-		fmt.Printf("Config:             %#v\n", *status.Config)
+		config, err := status.Config.JSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Config:             %s\n", config)
 	}
 }
 
