@@ -37,6 +37,9 @@ type Agent struct {
 	trustedNetwork status.TrustedNetwork
 	loginState     status.LoginState
 	loggedIn       bool
+
+	// last client keep-alive
+	lastKeepAlive int64
 }
 
 // logTND logs if we are connected to a trusted network
@@ -114,6 +117,12 @@ func (a *Agent) handleLoginStateChange() {
 	}
 }
 
+// handleLastKeepAliveChange handles a change of the last keep-alive time
+func (a *Agent) handleLastKeepAliveChange() {
+	log.WithField("lastKeepAlive", a.lastKeepAlive).
+		Info("Last keep-alive time changed")
+}
+
 // setTrustedNetwork sets the trusted network status to "trusted" or "not trusted"
 func (a *Agent) setTrustedNetwork(trusted bool) {
 	// convert bool to trusted network status
@@ -143,6 +152,18 @@ func (a *Agent) setLoginState(loginState status.LoginState) {
 	// state changed
 	a.loginState = loginState
 	a.handleLoginStateChange()
+}
+
+// setLastKeepAlive sets LastKeepAlive
+func (a *Agent) setLastKeepAlive(lastKeepAlive int64) {
+	if lastKeepAlive == a.lastKeepAlive {
+		// timestamp not changed
+		return
+	}
+
+	// timestamp changed
+	a.lastKeepAlive = lastKeepAlive
+	a.handleLastKeepAliveChange()
 }
 
 // initTND initializes the trusted network detection from the config
@@ -208,6 +229,7 @@ func (a *Agent) handleRequest(request *api.Request) {
 		}
 		s.TrustedNetwork = a.trustedNetwork
 		s.LoginState = a.loginState
+		s.LastKeepAlive = a.lastKeepAlive
 
 		// convert status to json and set it as reply
 		b, err := s.JSON()
@@ -303,6 +325,12 @@ func (a *Agent) start() {
 
 			// update login state
 			a.setLoginState(r)
+
+			// update last keep-alive
+			if r.LoggedIn() {
+				now := time.Now().Unix()
+				a.setLastKeepAlive(now)
+			}
 
 		case u, ok := <-a.ccache.Updates():
 			if !ok {

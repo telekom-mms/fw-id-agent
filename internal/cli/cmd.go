@@ -99,6 +99,14 @@ func getStatus() {
 	fmt.Printf("Trusted Network:    %s\n", status.TrustedNetwork)
 	fmt.Printf("Login State:        %s\n", status.LoginState)
 	if verbose {
+		// last keep-alive info
+		lastKeepAlive := time.Unix(status.LastKeepAlive, 0)
+		if lastKeepAlive.IsZero() {
+			fmt.Printf("Last Keep-Alive:    0\n")
+		} else {
+			fmt.Printf("Last Keep-Alive:    %s\n", lastKeepAlive)
+		}
+
 		// kerberos info
 		fmt.Printf("Kerberos TGT:\n")
 

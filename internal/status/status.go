@@ -79,6 +79,7 @@ type Status struct {
 	Config         *config.Config
 	TrustedNetwork TrustedNetwork
 	LoginState     LoginState
+	LastKeepAlive  int64
 	KerberosTGT    KerberosTicket
 }
 
