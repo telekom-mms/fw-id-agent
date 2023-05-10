@@ -96,8 +96,8 @@ func getStatus() {
 		return
 	}
 
-	fmt.Printf("Trusted Network:    %t\n", status.TrustedNetwork)
 	fmt.Printf("Logged In:          %t\n", status.LoggedIn)
+	fmt.Printf("Trusted Network:    %s\n", status.TrustedNetwork)
 	if verbose {
 		// kerberos info
 		fmt.Printf("Kerberos TGT:\n")

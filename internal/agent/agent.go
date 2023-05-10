@@ -34,13 +34,13 @@ type Agent struct {
 	tgtEndTime   time.Time
 
 	// trusted network and login status
-	trusted  bool
-	loggedIn bool
+	loggedIn       bool
+	trustedNetwork status.TrustedNetwork
 }
 
 // logTND logs if we are connected to a trusted network
 func (a *Agent) logTND() {
-	if !a.trusted {
+	if !a.trustedNetwork.Trusted() {
 		log.Info("Agent is not connected to a trusted network")
 		return
 	}
@@ -62,7 +62,7 @@ func (a *Agent) notifyTND() {
 		// desktop notifications disabled
 		return
 	}
-	if !a.trusted {
+	if !a.trustedNetwork.Trusted() {
 		notify.Notify("No Trusted Network", "No trusted network detected")
 		return
 	}
@@ -80,6 +80,33 @@ func (a *Agent) notifyLogin() {
 		return
 	}
 	notify.Notify("Identity Agent Login", "Identity Agent logged in successfully")
+}
+
+// handleTrustedNetworkChange handles a change of the trusted network status
+func (a *Agent) handleTrustedNetworkChange() {
+	log.WithField("trustedNetwork", a.trustedNetwork).
+		Info("Trusted network status changed")
+	a.logTND()
+	a.notifyTND()
+}
+
+// setTrustedNetwork sets the trusted network status to "trusted" or "not trusted"
+func (a *Agent) setTrustedNetwork(trusted bool) {
+	// convert bool to trusted network status
+	trustedNetwork := status.TrustedNetworkNotTrusted
+	if trusted {
+		trustedNetwork = status.TrustedNetworkTrusted
+	}
+
+	// check status change
+	if trustedNetwork == a.trustedNetwork {
+		// status not changed
+		return
+	}
+
+	// status changed
+	a.trustedNetwork = trustedNetwork
+	a.handleTrustedNetworkChange()
 }
 
 // initTND initializes the trusted network detection from the config
@@ -138,13 +165,13 @@ func (a *Agent) handleRequest(request *api.Request) {
 	case api.TypeQuery:
 		// create status
 		s := status.New()
-		s.TrustedNetwork = a.trusted
 		s.LoggedIn = a.loggedIn
 		s.Config = a.config
 		s.KerberosTGT = status.KerberosTicket{
 			StartTime: a.tgtStartTime.Unix(),
 			EndTime:   a.tgtEndTime.Unix(),
 		}
+		s.TrustedNetwork = a.trustedNetwork
 
 		// convert status to json and set it as reply
 		b, err := s.JSON()
@@ -158,7 +185,7 @@ func (a *Agent) handleRequest(request *api.Request) {
 
 	case api.TypeRelogin:
 		log.Info("Agent got relogin request from user")
-		if !a.trusted {
+		if !a.trustedNetwork.Trusted() {
 			// no trusted network, abort
 			log.Error("Agent not connected to a trusted network, not restarting client")
 			request.Error("Not connected to a trusted network")
@@ -205,6 +232,9 @@ func (a *Agent) start() {
 	sleepMon.Start()
 	defer sleepMon.Stop()
 
+	// set trusted network status to "not trusted"
+	a.setTrustedNetwork(false)
+
 	// start main loop
 	for {
 		select {
@@ -214,22 +244,17 @@ func (a *Agent) start() {
 				return
 			}
 
-			// check if trusted state changed
-			if r != a.trusted {
-				log.WithField("trusted", r).
-					Debug("Agent got trusted network change")
-				a.trusted = r
-				a.logTND()
-				a.notifyTND()
-				if a.trusted {
-					// switched to trusted network,
-					// start identity agent client
-					a.startClient()
-				} else {
-					// switched to untrusted network,
-					// stop identity agent client
-					a.stopClient()
-				}
+			// update trusted network status
+			a.setTrustedNetwork(r)
+
+			if a.trustedNetwork.Trusted() {
+				// switched to trusted network,
+				// start identity agent client
+				a.startClient()
+			} else {
+				// switched to untrusted network,
+				// stop identity agent client
+				a.stopClient()
 			}
 
 		case r, ok := <-a.login:
@@ -279,7 +304,7 @@ func (a *Agent) start() {
 				if a.client != nil {
 					a.client.SetCCache(u.CCache)
 				}
-				if a.trusted {
+				if a.trustedNetwork.Trusted() {
 					a.startClient()
 				}
 			}
@@ -301,7 +326,7 @@ func (a *Agent) start() {
 			if a.client != nil {
 				a.client.SetKrb5Conf(u.Config)
 			}
-			if a.trusted {
+			if a.trustedNetwork.Trusted() {
 				a.startClient()
 			}
 
@@ -325,7 +350,7 @@ func (a *Agent) start() {
 
 			// reset trusted network status and stop client
 			log.Info("Agent got sleep event, resetting trusted network status and stopping client")
-			a.trusted = false
+			a.setTrustedNetwork(false)
 			a.stopClient()
 
 		case <-a.done:
