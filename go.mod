@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/T-Systems-MMS/tnd v0.0.0-20230404085219-434ecc2a5379
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gen2brain/beeep v0.0.0-20230307103607-6e717729cb4f
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect

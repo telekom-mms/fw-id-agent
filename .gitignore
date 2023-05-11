@@ -12,5 +12,7 @@
 *.out
 
 # Ignore executables
-/fw-id-agent
-/fw-id-cli
+fw-id-agent
+fw-id-cli
+# Ignore dist
+dist

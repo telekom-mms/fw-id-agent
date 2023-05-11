@@ -39,10 +39,7 @@ func (c *ConfMon) sendUpdate(update *ConfUpdate) {
 
 // isConfigFileEvent checks if event is a config file event
 func (c *ConfMon) isConfigFileEvent(event fsnotify.Event) bool {
-	if event.Name == c.confFile {
-		return true
-	}
-	return false
+	return event.Name == c.confFile
 }
 
 // handleConfigFileEvent handles a config file event

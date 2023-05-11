@@ -1,0 +1,89 @@
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+builds:
+  - id: fw-id-agent
+    binary: fw-id-agent
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/fw-id-agent/main.go
+    ldflags:
+      - -s -w -X github.com/T-Systems-MMS/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
+  - id: fw-id-cli
+    binary: fw-id-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/fw-id-cli/main.go
+    ldflags:
+      - -s -w -X github.com/T-Systems-MMS/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
+archives:
+  - format: tar.gz
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+nfpms:
+  - package_name: fw-id-agent
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}"
+    vendor: Deutsche Telekom MMS GmbH
+    maintainer: The MMS Linux Dev Team <mmslinux-dev@telekom.de>
+    description: |-
+      Corporate Identity Agent
+      Agent to logon at the corporate firewall.
+    license: MIT
+    builds:
+      - "fw-id-agent"
+      - "fw-id-cli"
+    formats:
+      - deb
+    bindir: /usr/bin
+    section: net
+    # important: this makes the package non native
+    release: "1"
+    priority: important
+    # chglog init -> generates changelog.yml
+    # chglog add --version v#.#.# -> after every tag, call in hook above?
+    # activate if https://github.com/goreleaser/nfpm/pull/656 is merged and used in goreleaser
+    # -> remove overrides
+    # changelog: "changelog.yml"
+    scripts:
+      postinstall: ./scripts/postinstall.sh
+    deb:
+      lintian_overrides:
+        - "no-manual-page"
+        - "no-changelog"
+        - "statically-linked-binary"
+        - "maintainer-script-calls-systemctl"
+    dependencies:
+      - "libc6 (>= 2.34)"
+    contents:
+      - src: init/fw-id-agent.service
+        dst: /usr/lib/systemd/user/
+        file_info:
+          mode: 0644
+      - src: configs/config.json
+        dst: /usr/share/fw-id-agent/
+        file_info:
+          mode: 0644
+      - src: copyright
+        dst: /usr/share/doc/fw-id-agent/
+        file_info:
+          mode: 0644
+release:
+  prerelease: auto
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
