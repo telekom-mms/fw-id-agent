@@ -60,6 +60,8 @@ type Config struct {
 	MinUserID int
 	// StartDelay is the time the agent sleeps before starting in seconds
 	StartDelay int
+	// Notifications specifies whether the agent should show desktop notifications
+	Notifications bool
 }
 
 // GetKeepAlive returns the client keep-alive time as Duration
@@ -101,11 +103,12 @@ func (c *Config) Valid() bool {
 // Default returns a new config with default values
 func Default() *Config {
 	return &Config{
-		KeepAlive:  5,
-		Timeout:    30,
-		RetryTimer: 15,
-		MinUserID:  1000,
-		StartDelay: 20,
+		KeepAlive:     5,
+		Timeout:       30,
+		RetryTimer:    15,
+		MinUserID:     1000,
+		StartDelay:    20,
+		Notifications: true,
 	}
 }
 

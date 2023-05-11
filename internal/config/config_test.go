@@ -82,11 +82,12 @@ func TestConfigValid(t *testing.T) {
 // TestDefault tests Default
 func TestDefault(t *testing.T) {
 	want := &Config{
-		KeepAlive:  5,
-		Timeout:    30,
-		RetryTimer: 15,
-		MinUserID:  1000,
-		StartDelay: 20,
+		KeepAlive:     5,
+		Timeout:       30,
+		RetryTimer:    15,
+		MinUserID:     1000,
+		StartDelay:    20,
+		Notifications: true,
 	}
 	got := Default()
 	if !reflect.DeepEqual(got, want) {
@@ -140,7 +141,8 @@ func TestLoad(t *testing.T) {
         },
 	"Verbose": true,
 	"MinUserID": 1000,
-	"StartDelay": 20
+	"StartDelay": 20,
+	"Notifications": true
 }`,
 		`{
         "ServiceURL":"https://myservice.mycompany.com:443",
@@ -196,9 +198,10 @@ func TestLoad(t *testing.T) {
 					},
 				},
 			},
-			Verbose:    true,
-			MinUserID:  1000,
-			StartDelay: 20,
+			Verbose:       true,
+			MinUserID:     1000,
+			StartDelay:    20,
+			Notifications: true,
 		}
 		if !reflect.DeepEqual(want, cfg) {
 			t.Errorf("got %v, want %v", cfg, want)
