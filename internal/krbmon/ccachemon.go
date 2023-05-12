@@ -84,10 +84,7 @@ func getCredentialCacheFilename() (string, error) {
 
 // isCCacheFileEvent checks if event is a ccache file event
 func (c *CCacheMon) isCCacheFileEvent(event fsnotify.Event) bool {
-	if event.Name == c.cCacheFile {
-		return true
-	}
-	return false
+	return event.Name == c.cCacheFile
 }
 
 // handleCCacheFileEvent handles a ccache file event

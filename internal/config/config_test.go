@@ -175,7 +175,7 @@ func TestLoad(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		cfg, err := Load(valid.Name())
+		cfg, _ := Load(valid.Name())
 		if cfg == nil {
 			t.Errorf("got nil, want != nil")
 		}

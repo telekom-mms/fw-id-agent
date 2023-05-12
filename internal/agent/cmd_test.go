@@ -10,7 +10,7 @@ import (
 // TestParseTNDServers tests parseTNDServers
 func TestParseTNDServers(t *testing.T) {
 	// test invalid
-	got, ok := parseTNDServers("")
+	_, ok := parseTNDServers("")
 	if ok {
 		t.Errorf("got true, want false")
 	}
@@ -22,7 +22,7 @@ func TestParseTNDServers(t *testing.T) {
 			Hash: "abcdef1234567890",
 		},
 	}
-	got, ok = parseTNDServers(want[0].URL + ":" + want[0].Hash)
+	got, ok := parseTNDServers(want[0].URL + ":" + want[0].Hash)
 	if !ok {
 		t.Errorf("got false, want true")
 	}
