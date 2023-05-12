@@ -9,20 +9,31 @@ trusted network and login state.
 
 ## Installation
 
-Note: Please see the [install script](/scripts/install.sh) for the individual
-install steps and be sure you are OK with the changes this script makes to your
-system before you follow these instructions!
+For installation you can chose between 2 options:
 
-You can use the simple [install script](/scripts/install.sh) to install the
-firewall identity agent as a systemd user service:
+### Using Debian/Ubuntu package
+
+Download the package from releases page and use the following instructions to install and activate the agent:
 
 ```console
-$ ./scripts/install.sh
+$ sudo apt install ./fw-id-agent.deb
+$ sudo cp /usr/share/fw-id-agent/config.json /etc/fw-id-agent.json # and adjust config parameters
+$ sudo systemctl --user start fw-id-agent.service
 ```
 
-This script installs the example [configuration file](configs/config.json) to
-`/etc/fw-id-agent.json` and the example [systemd user
-unit](init/fw-id-agent.service). Edit them to match your configuration.
+### Using tar.gz archive
+
+Download the archive from releases page and use the following instructions to install and activate the agent:
+
+```console
+$ tar -xf fw-id-agent.tar.gz && cd <extracted directory>
+$ sudo cp example_config.json /etc/fw-id-agent.json # and adjust config parameters
+$ sudo cp fw-id-agent /usr/bin/
+$ sudo cp fw-id-cli /usr/bin/
+$ sudo cp fw-id-agent.service /usr/lib/systemd/user/
+$ sudo systemctl --user enable fw-id-agent.service
+$ sudo systemctl --user start fw-id-agent.service
+```
 
 ## Usage
 
