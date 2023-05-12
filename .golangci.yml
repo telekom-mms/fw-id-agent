@@ -1,0 +1,12 @@
+# For documentation, see https://golangci-lint.run/usage/configuration/
+run:
+  timeout: 60m
+linters:
+  enable:
+    - unconvert
+    - unparam
+    - gofmt
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - (*flag.FlagSet).Parse
