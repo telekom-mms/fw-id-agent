@@ -21,17 +21,18 @@ var (
 
 // command line argument names
 const (
-	argConfig     = "config"
-	argVersion    = "version"
-	argServiceURL = "serviceurl"
-	argRealm      = "realm"
-	argKeepAlive  = "keepalive"
-	argTimeout    = "timeout"
-	argRetryTimer = "retrytimer"
-	argTNDServers = "tndservers"
-	argVerbose    = "verbose"
-	argMinUserID  = "minuserid"
-	argStartDelay = "startdelay"
+	argConfig        = "config"
+	argVersion       = "version"
+	argServiceURL    = "serviceurl"
+	argRealm         = "realm"
+	argKeepAlive     = "keepalive"
+	argTimeout       = "timeout"
+	argRetryTimer    = "retrytimer"
+	argTNDServers    = "tndservers"
+	argVerbose       = "verbose"
+	argMinUserID     = "minuserid"
+	argStartDelay    = "startdelay"
+	argNotifications = "notifications"
 )
 
 // flagIsSet returns whether flag with name is set as command line argument
@@ -79,6 +80,7 @@ func Run() {
 	verbose := flag.Bool(argVerbose, defaults.Verbose, "Set verbose output")
 	minUserID := flag.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
 	startDelay := flag.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
+	notifications := flag.Bool(argNotifications, defaults.Notifications, "Set desktop notifications")
 	flag.Parse()
 
 	// print version?
@@ -128,6 +130,9 @@ func Run() {
 	}
 	if flagIsSet(argStartDelay) {
 		cfg.StartDelay = *startDelay
+	}
+	if flagIsSet(argNotifications) {
+		cfg.Notifications = *notifications
 	}
 
 	// check if config is valid

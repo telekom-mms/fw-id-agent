@@ -58,6 +58,10 @@ func (a *Agent) logLogin() {
 
 // notifyTND notifies the user if we are connected to a trusted network
 func (a *Agent) notifyTND() {
+	if !a.config.Notifications {
+		// desktop notifications disabled
+		return
+	}
 	if !a.trusted {
 		notify.Notify("No Trusted Network", "No trusted network detected")
 		return
@@ -67,6 +71,10 @@ func (a *Agent) notifyTND() {
 
 // notifyLogin notifies the user if the identity agent is logged in
 func (a *Agent) notifyLogin() {
+	if !a.config.Notifications {
+		// desktop notifications disabled
+		return
+	}
 	if !a.loggedIn {
 		notify.Notify("Identity Agent Logout", "Identity Agent logged out")
 		return
