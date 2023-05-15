@@ -21,7 +21,7 @@ type Agent struct {
 	krbcfg *krbmon.ConfMon
 	tnd    *trustnet.TND
 	client *client.Client
-	login  chan bool
+	login  chan status.LoginState
 	done   chan struct{}
 	closed chan struct{}
 
@@ -30,17 +30,20 @@ type Agent struct {
 	krbcfgUp *krbmon.ConfUpdate
 
 	// kerberos tgt times
-	tgtStartTime time.Time
-	tgtEndTime   time.Time
+	kerberosTGT status.KerberosTicket
 
 	// trusted network and login status
-	trusted  bool
-	loggedIn bool
+	trustedNetwork status.TrustedNetwork
+	loginState     status.LoginState
+	loggedIn       bool
+
+	// last client keep-alive
+	lastKeepAlive int64
 }
 
 // logTND logs if we are connected to a trusted network
 func (a *Agent) logTND() {
-	if !a.trusted {
+	if !a.trustedNetwork.Trusted() {
 		log.Info("Agent is not connected to a trusted network")
 		return
 	}
@@ -62,7 +65,7 @@ func (a *Agent) notifyTND() {
 		// desktop notifications disabled
 		return
 	}
-	if !a.trusted {
+	if !a.trustedNetwork.Trusted() {
 		notify.Notify("No Trusted Network", "No trusted network detected")
 		return
 	}
@@ -80,6 +83,108 @@ func (a *Agent) notifyLogin() {
 		return
 	}
 	notify.Notify("Identity Agent Login", "Identity Agent logged in successfully")
+}
+
+// handleKerberosTGTChange handles a change of the kerberos TGT times
+func (a *Agent) handleKerberosTGTChange() {
+	log.WithFields(log.Fields{
+		"StartTime": a.kerberosTGT.StartTime,
+		"EndTime":   a.kerberosTGT.EndTime,
+	}).Info("Kerberos TGT times changed")
+}
+
+// handleTrustedNetworkChange handles a change of the trusted network status
+func (a *Agent) handleTrustedNetworkChange() {
+	log.WithField("trustedNetwork", a.trustedNetwork).
+		Info("Trusted network status changed")
+	a.logTND()
+	a.notifyTND()
+}
+
+// handleLoginStateChange handles a change of the login state
+func (a *Agent) handleLoginStateChange() {
+	log.WithField("loginState", a.loginState).
+		Info("Login state changed")
+
+	// if we switched from "logged in" to "logged out" or from "logged out"
+	// to "logged in" log the change and notify user
+	switch a.loginState {
+	case status.LoginStateLoggedOut:
+		if a.loggedIn {
+			a.loggedIn = false
+			a.logLogin()
+			a.notifyLogin()
+		}
+	case status.LoginStateLoggedIn:
+		if !a.loggedIn {
+			a.loggedIn = true
+			a.logLogin()
+			a.notifyLogin()
+		}
+	}
+}
+
+// handleLastKeepAliveChange handles a change of the last keep-alive time
+func (a *Agent) handleLastKeepAliveChange() {
+	log.WithField("lastKeepAlive", a.lastKeepAlive).
+		Info("Last keep-alive time changed")
+}
+
+// setKerberosTGT sets the kerberos TGT times
+func (a *Agent) setKerberosTGT(startTime, endTime int64) {
+	if startTime == a.kerberosTGT.StartTime &&
+		endTime == a.kerberosTGT.EndTime {
+		// ticket not changed
+		return
+	}
+
+	// ticket changed
+	a.kerberosTGT.StartTime = startTime
+	a.kerberosTGT.EndTime = endTime
+	a.handleKerberosTGTChange()
+}
+
+// setTrustedNetwork sets the trusted network status to "trusted" or "not trusted"
+func (a *Agent) setTrustedNetwork(trusted bool) {
+	// convert bool to trusted network status
+	trustedNetwork := status.TrustedNetworkNotTrusted
+	if trusted {
+		trustedNetwork = status.TrustedNetworkTrusted
+	}
+
+	// check status change
+	if trustedNetwork == a.trustedNetwork {
+		// status not changed
+		return
+	}
+
+	// status changed
+	a.trustedNetwork = trustedNetwork
+	a.handleTrustedNetworkChange()
+}
+
+// setLoginState sets the login state
+func (a *Agent) setLoginState(loginState status.LoginState) {
+	if loginState == a.loginState {
+		// state not changed
+		return
+	}
+
+	// state changed
+	a.loginState = loginState
+	a.handleLoginStateChange()
+}
+
+// setLastKeepAlive sets LastKeepAlive
+func (a *Agent) setLastKeepAlive(lastKeepAlive int64) {
+	if lastKeepAlive == a.lastKeepAlive {
+		// timestamp not changed
+		return
+	}
+
+	// timestamp changed
+	a.lastKeepAlive = lastKeepAlive
+	a.handleLastKeepAliveChange()
 }
 
 // initTND initializes the trusted network detection from the config
@@ -112,7 +217,6 @@ func (a *Agent) startClient() {
 	}
 
 	// start new client
-	a.loggedIn = false
 	a.client = client.NewClient(a.config, a.ccacheUp.CCache, a.krbcfgUp.Config)
 	a.client.Start()
 	a.login = a.client.Results()
@@ -126,10 +230,11 @@ func (a *Agent) stopClient() {
 	}
 
 	// stop existing client
-	a.loggedIn = false
+	a.setLoginState(status.LoginStateLoggingOut)
 	a.client.Stop()
 	a.client = nil
 	a.login = nil
+	a.setLoginState(status.LoginStateLoggedOut)
 }
 
 // handleRequest handles an api request
@@ -138,13 +243,11 @@ func (a *Agent) handleRequest(request *api.Request) {
 	case api.TypeQuery:
 		// create status
 		s := status.New()
-		s.TrustedNetwork = a.trusted
-		s.LoggedIn = a.loggedIn
 		s.Config = a.config
-		s.KerberosTGT = status.KerberosTicket{
-			StartTime: a.tgtStartTime.Unix(),
-			EndTime:   a.tgtEndTime.Unix(),
-		}
+		s.TrustedNetwork = a.trustedNetwork
+		s.LoginState = a.loginState
+		s.LastKeepAlive = a.lastKeepAlive
+		s.KerberosTGT = a.kerberosTGT
 
 		// convert status to json and set it as reply
 		b, err := s.JSON()
@@ -158,7 +261,7 @@ func (a *Agent) handleRequest(request *api.Request) {
 
 	case api.TypeRelogin:
 		log.Info("Agent got relogin request from user")
-		if !a.trusted {
+		if !a.trustedNetwork.Trusted() {
 			// no trusted network, abort
 			log.Error("Agent not connected to a trusted network, not restarting client")
 			request.Error("Not connected to a trusted network")
@@ -205,6 +308,11 @@ func (a *Agent) start() {
 	sleepMon.Start()
 	defer sleepMon.Stop()
 
+	// set trusted network status to "not trusted" and
+	// login state to "logged out"
+	a.setTrustedNetwork(false)
+	a.setLoginState(status.LoginStateLoggedOut)
+
 	// start main loop
 	for {
 		select {
@@ -214,22 +322,17 @@ func (a *Agent) start() {
 				return
 			}
 
-			// check if trusted state changed
-			if r != a.trusted {
-				log.WithField("trusted", r).
-					Debug("Agent got trusted network change")
-				a.trusted = r
-				a.logTND()
-				a.notifyTND()
-				if a.trusted {
-					// switched to trusted network,
-					// start identity agent client
-					a.startClient()
-				} else {
-					// switched to untrusted network,
-					// stop identity agent client
-					a.stopClient()
-				}
+			// update trusted network status
+			a.setTrustedNetwork(r)
+
+			if a.trustedNetwork.Trusted() {
+				// switched to trusted network,
+				// start identity agent client
+				a.startClient()
+			} else {
+				// switched to untrusted network,
+				// stop identity agent client
+				a.stopClient()
 			}
 
 		case r, ok := <-a.login:
@@ -238,12 +341,13 @@ func (a *Agent) start() {
 				return
 			}
 
-			// check if logged in state changed
-			if r != a.loggedIn {
-				log.WithField("loggedIn", r).Debug("Agent got login change")
-				a.loggedIn = r
-				a.logLogin()
-				a.notifyLogin()
+			// update login state
+			a.setLoginState(r)
+
+			// update last keep-alive
+			if r.LoggedIn() {
+				now := time.Now().Unix()
+				a.setLastKeepAlive(now)
 			}
 
 		case u, ok := <-a.ccache.Updates():
@@ -253,35 +357,35 @@ func (a *Agent) start() {
 			}
 
 			// handle update
-			if tgt := u.GetTGT(a.config.Realm); tgt != nil {
-				// check if tgt changed
-				if tgt.StartTime.Equal(a.tgtStartTime) &&
-					tgt.EndTime.Equal(a.tgtEndTime) {
-					// tgt did not change
-					break
-				}
+			tgt := u.GetTGT(a.config.Realm)
+			if tgt == nil {
+				break
+			}
 
-				// tgt changed
-				log.WithFields(log.Fields{
-					"StartTime": tgt.StartTime,
-					"EndTime":   tgt.EndTime,
-				}).Debug("Agent got updated kerberos TGT")
+			// get start and end unix timestamps of tgt
+			startTime := tgt.StartTime.Unix()
+			endTime := tgt.EndTime.Unix()
 
-				// save start and end time
-				a.tgtStartTime = tgt.StartTime
-				a.tgtEndTime = tgt.EndTime
+			// check if tgt changed
+			if a.kerberosTGT.TimesEqual(startTime, endTime) {
+				// tgt did not change
+				break
+			}
 
-				// save update
-				a.ccacheUp = u
+			// tgt changed
+			// save start and end time
+			a.setKerberosTGT(startTime, endTime)
 
-				// set ccache in existing client or check if we
-				// can start new client now
-				if a.client != nil {
-					a.client.SetCCache(u.CCache)
-				}
-				if a.trusted {
-					a.startClient()
-				}
+			// save update
+			a.ccacheUp = u
+
+			// set ccache in existing client or check if we
+			// can start new client now
+			if a.client != nil {
+				a.client.SetCCache(u.CCache)
+			}
+			if a.trustedNetwork.Trusted() {
+				a.startClient()
 			}
 
 		case u, ok := <-a.krbcfg.Updates():
@@ -301,7 +405,7 @@ func (a *Agent) start() {
 			if a.client != nil {
 				a.client.SetKrb5Conf(u.Config)
 			}
-			if a.trusted {
+			if a.trustedNetwork.Trusted() {
 				a.startClient()
 			}
 
@@ -325,7 +429,7 @@ func (a *Agent) start() {
 
 			// reset trusted network status and stop client
 			log.Info("Agent got sleep event, resetting trusted network status and stopping client")
-			a.trusted = false
+			a.setTrustedNetwork(false)
 			a.stopClient()
 
 		case <-a.done:

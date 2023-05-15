@@ -37,7 +37,7 @@ func parseCommandLine() {
 	flag.Usage = func() {
 		cmd := os.Args[0]
 		w := flag.CommandLine.Output()
-		usage := func(f string, args ...interface{}) {
+		usage := func(f string, args ...any) {
 			_, err := fmt.Fprintf(w, f, args...)
 			if err != nil {
 				log.WithError(err).Fatal("CLI could not print usage")
@@ -67,7 +67,7 @@ func parseCommandLine() {
 	command = flag.Arg(0)
 	switch command {
 	case "status":
-		statusCmd.Parse(os.Args[2:])
+		_ = statusCmd.Parse(os.Args[2:])
 	case "relogin":
 	default:
 		flag.Usage()
@@ -96,30 +96,42 @@ func getStatus() {
 		return
 	}
 
-	fmt.Printf("Trusted Network:    %t\n", status.TrustedNetwork)
-	fmt.Printf("Logged In:          %t\n", status.LoggedIn)
+	fmt.Printf("Trusted Network:    %s\n", status.TrustedNetwork)
+	fmt.Printf("Login State:        %s\n", status.LoginState)
 	if verbose {
+		// last keep-alive info
+		lastKeepAlive := time.Unix(status.LastKeepAlive, 0)
+		if lastKeepAlive.IsZero() {
+			fmt.Printf("Last Keep-Alive:    0\n")
+		} else {
+			fmt.Printf("Last Keep-Alive:    %s\n", lastKeepAlive)
+		}
+
 		// kerberos info
 		fmt.Printf("Kerberos TGT:\n")
 
 		// kerberos tgt start time
 		tgtStartTime := time.Unix(status.KerberosTGT.StartTime, 0)
 		if tgtStartTime.IsZero() {
-			fmt.Printf("- StartTime:        0\n")
+			fmt.Printf("- Start Time:       0\n")
 		} else {
-			fmt.Printf("- TGT Start:        %s\n", tgtStartTime)
+			fmt.Printf("- Start Time:       %s\n", tgtStartTime)
 		}
 
 		// kerberos tgt end time
 		tgtEndTime := time.Unix(status.KerberosTGT.EndTime, 0)
 		if tgtEndTime.IsZero() {
-			fmt.Printf("- EndTime:          0\n")
+			fmt.Printf("- End Time:         0\n")
 		} else {
-			fmt.Printf("- EndTime:          %s\n", tgtEndTime)
+			fmt.Printf("- End Time:         %s\n", tgtEndTime)
 		}
 
 		// agent config
-		fmt.Printf("Config:             %#v\n", *status.Config)
+		config, err := status.Config.JSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Config:             %s\n", config)
 	}
 }
 

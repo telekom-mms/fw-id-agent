@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
 	krbClient "github.com/jcmturner/gokrb5/v8/client"
 	krbConfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"
@@ -22,7 +23,7 @@ import (
 type Client struct {
 	config    *config.Config
 	keepAlive time.Duration
-	results   chan bool
+	results   chan status.LoginState
 	done      chan struct{}
 
 	// current kerberos ccache and config
@@ -102,6 +103,10 @@ func (c *Client) doServiceRequest(api string) (response *http.Response, err erro
 
 // login sends a login request to the identity service
 func (c *Client) login() (err error) {
+	// signal "logging in" state
+	c.results <- status.LoginStateLoggingIn
+
+	// send login request
 	response, err := c.doServiceRequest("/login")
 	if response != nil {
 		defer func() {
@@ -113,24 +118,30 @@ func (c *Client) login() (err error) {
 		}()
 	}
 	if err != nil || response.StatusCode != 200 {
-		c.results <- false
+		c.results <- status.LoginStateLoggedOut
 		return
 	}
+
+	// read response
 	var body []byte
 	body, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		err = fmt.Errorf("%d: error reading login response body: %w", BackendError, err)
-		c.results <- false
+		c.results <- status.LoginStateLoggedOut
 		return
 	}
+
+	// parse JSON in login response
 	var responseJSON LoginResponse
 	err = json.Unmarshal(body, &responseJSON)
 	if err != nil {
 		// assume login successful but response has no parseable result
 		log.WithError(err).Error("Agent could not parse login response")
-		c.results <- true
+		c.results <- status.LoginStateLoggedIn
 		return
 	}
+
+	// set keep-alive time
 	if responseJSON.KeepAlive > 0 {
 		c.keepAlive = time.Duration(responseJSON.KeepAlive) * time.Minute
 	} else {
@@ -141,13 +152,21 @@ func (c *Client) login() (err error) {
 		}).Error("Agent received invalid keep alive time at login, using current")
 	}
 
-	c.results <- true
+	// signal "logged in" state
+	c.results <- status.LoginStateLoggedIn
 	return
 }
 
+// logout sends a logout request to the identity service
 func (c *Client) logout() (err error) {
+	// signal "logging out" state
+	c.results <- status.LoginStateLoggingOut
+
+	// send logout request
 	_, err = c.doServiceRequest("/logout")
-	c.results <- false
+
+	// signal "logged out" state
+	c.results <- status.LoginStateLoggedOut
 	return
 }
 
@@ -200,7 +219,7 @@ func (c *Client) Stop() {
 }
 
 // Results returns the result channel
-func (c *Client) Results() chan bool {
+func (c *Client) Results() chan status.LoginState {
 	return c.results
 }
 
@@ -239,7 +258,7 @@ func (c *Client) GetKrb5Conf() *krbConfig.Config {
 // NewClient returns a new Client
 func NewClient(config *config.Config, ccache *credentials.CCache, krb5conf *krbConfig.Config) *Client {
 	return &Client{
-		results:   make(chan bool),
+		results:   make(chan status.LoginState),
 		done:      make(chan struct{}),
 		keepAlive: config.GetKeepAlive(),
 		config:    config,
