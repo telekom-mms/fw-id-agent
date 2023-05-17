@@ -126,12 +126,35 @@ type Service struct {
 	closed   chan struct{}
 }
 
+// dbusConn is an interface for dbus.Conn to allow for testing
+type dbusConn interface {
+	Close() error
+	Export(v any, path dbus.ObjectPath, iface string) error
+	RequestName(name string, flags dbus.RequestNameFlags) (dbus.RequestNameReply, error)
+}
+
+// dbusConnectSessionBus encapsulates dbus.ConnectSessionBus to allow for testing
+var dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
+	return dbus.ConnectSessionBus(opts...)
+}
+
+// propProperties is an interface for prop.Properties to allow for testing
+type propProperties interface {
+	Introspection(iface string) []introspect.Property
+	SetMust(iface, property string, v any)
+}
+
+// propExport encapsulates prop.Export to allow for testing
+var propExport = func(conn dbusConn, path dbus.ObjectPath, props prop.Map) (propProperties, error) {
+	return prop.Export(conn.(*dbus.Conn), path, props)
+}
+
 // start starts the service
 func (s *Service) start() {
 	defer close(s.closed)
 
 	// connect to session bus
-	conn, err := dbus.ConnectSessionBus()
+	conn, err := dbusConnectSessionBus()
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect to D-Bus session bus")
 	}
@@ -188,7 +211,7 @@ func (s *Service) start() {
 			},
 		},
 	}
-	props, err := prop.Export(conn, Path, propsSpec)
+	props, err := propExport(conn, Path, propsSpec)
 	if err != nil {
 		log.WithError(err).Fatal("Could not export D-Bus properties spec")
 	}
