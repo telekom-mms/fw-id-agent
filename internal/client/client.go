@@ -49,7 +49,7 @@ type LoginResponse struct {
 	KeepAlive int `json:"keep-alive"`
 }
 
-func (c *Client) doServiceRequest(api string) (response *http.Response, err error) {
+func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *http.Response, err error) {
 	if c.GetCCache() == nil {
 		err = fmt.Errorf("%d: error creating %s request: kerberos CCache not set", TokenError, api)
 		return
@@ -74,9 +74,9 @@ func (c *Client) doServiceRequest(api string) (response *http.Response, err erro
 	}
 
 	httpClient := http.Client{
-		Timeout: c.config.GetTimeout(),
+		Timeout: timeout,
 		Transport: &http.Transport{
-			ResponseHeaderTimeout: c.config.GetTimeout(),
+			ResponseHeaderTimeout: timeout,
 			TLSClientConfig: &tls.Config{
 				MinVersion: tls.VersionTLS12,
 			},
@@ -107,7 +107,7 @@ func (c *Client) login() (err error) {
 	c.results <- status.LoginStateLoggingIn
 
 	// send login request
-	response, err := c.doServiceRequest("/login")
+	response, err := c.doServiceRequest("/login", c.config.GetLoginTimeout())
 	if response != nil {
 		defer func() {
 			err := response.Body.Close()
@@ -163,7 +163,7 @@ func (c *Client) logout() (err error) {
 	c.results <- status.LoginStateLoggingOut
 
 	// send logout request
-	_, err = c.doServiceRequest("/logout")
+	_, err = c.doServiceRequest("/logout", c.config.GetLogoutTimeout())
 
 	// signal "logged out" state
 	c.results <- status.LoginStateLoggedOut

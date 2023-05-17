@@ -2,7 +2,8 @@
 	"ServiceURL":"https://myservice.mycompany.com:443",
 	"Realm": "MYKERBEROSREALM.COM",
 	"KeepAlive": 5,
-	"Timeout": 30,
+	"LoginTimeout": 15,
+	"LogoutTimeout": 5,
 	"RetryTimer": 15,
 	"TND":{
 		"HTTPSServers":[

@@ -19,11 +19,21 @@ func TestConfigGetKeepAlive(t *testing.T) {
 	}
 }
 
-// TestConfigGetTimeout tests GetTimeout of Config
-func TestConfigGetTimeout(t *testing.T) {
-	config := &Config{Timeout: 30}
-	want := 30 * time.Second
-	got := config.GetTimeout()
+// TestConfigGetLoginTimeout tests GetLoginTimeout of Config
+func TestConfigGetLoginTimeout(t *testing.T) {
+	config := &Config{LoginTimeout: 15}
+	want := 15 * time.Second
+	got := config.GetLoginTimeout()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// TestConfigGetLogoutTimeout tests GetLoginTimeout of Config
+func TestConfigGetLogoutTimeout(t *testing.T) {
+	config := &Config{LogoutTimeout: 5}
+	want := 5 * time.Second
+	got := config.GetLogoutTimeout()
 	if got != want {
 		t.Errorf("got %v, want %v", got, want)
 	}
@@ -83,7 +93,8 @@ func TestConfigValid(t *testing.T) {
 func TestDefault(t *testing.T) {
 	want := &Config{
 		KeepAlive:     5,
-		Timeout:       30,
+		LoginTimeout:  15,
+		LogoutTimeout: 5,
 		RetryTimer:    15,
 		MinUserID:     1000,
 		StartDelay:    20,
@@ -125,7 +136,8 @@ func TestLoad(t *testing.T) {
         "ServiceURL":"https://myservice.mycompany.com:443",
         "Realm": "MYKERBEROSREALM.COM",
 	"KeepAlive": 5,
-	"Timeout": 30,
+	"LoginTimeout": 15,
+	"LogoutTimeout": 5,
 	"RetryTimer": 15,
         "TND":{
                 "HTTPSServers":[
@@ -181,11 +193,12 @@ func TestLoad(t *testing.T) {
 		}
 
 		want := &Config{
-			ServiceURL: "https://myservice.mycompany.com:443",
-			Realm:      "MYKERBEROSREALM.COM",
-			KeepAlive:  5,
-			Timeout:    30,
-			RetryTimer: 15,
+			ServiceURL:    "https://myservice.mycompany.com:443",
+			Realm:         "MYKERBEROSREALM.COM",
+			KeepAlive:     5,
+			LoginTimeout:  15,
+			LogoutTimeout: 5,
+			RetryTimer:    15,
 			TND: TNDConfig{
 				[]TNDHTTPSConfig{
 					{

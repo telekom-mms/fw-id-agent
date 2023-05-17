@@ -48,8 +48,10 @@ type Config struct {
 	Realm string
 	// KeepAlive is the default client keep-alive time in minutes
 	KeepAlive int
-	// Timeout is the client's timeout for requests to the service in seconds
-	Timeout int
+	// LoginTimeout is the client's timeout for login requests to the service in seconds
+	LoginTimeout int
+	// LogoutTimeout is the client's timeout for logout requests to the service in seconds
+	LogoutTimeout int
 	// RetryTimer is the client's login retry timer in case of errors in seconds
 	RetryTimer int
 	// TND is the client's trusted network detection configuration
@@ -69,9 +71,14 @@ func (c *Config) GetKeepAlive() time.Duration {
 	return time.Duration(c.KeepAlive) * time.Minute
 }
 
-// GetTimeout returns the client timeout as Duration
-func (c *Config) GetTimeout() time.Duration {
-	return time.Duration(c.Timeout) * time.Second
+// GetLoginTimeout returns the client login timeout as Duration
+func (c *Config) GetLoginTimeout() time.Duration {
+	return time.Duration(c.LoginTimeout) * time.Second
+}
+
+// GetLogoutTimeout returns the client logout timeout as Duration
+func (c *Config) GetLogoutTimeout() time.Duration {
+	return time.Duration(c.LogoutTimeout) * time.Second
 }
 
 // GetRetryTimer returns the client retry timer as Duration
@@ -90,7 +97,8 @@ func (c *Config) Valid() bool {
 		c.ServiceURL == "" ||
 		c.Realm == "" ||
 		c.KeepAlive < 0 ||
-		c.Timeout < 0 ||
+		c.LoginTimeout < 0 ||
+		c.LogoutTimeout < 0 ||
 		c.RetryTimer < 0 ||
 		!c.TND.Valid() ||
 		c.MinUserID < 0 ||
@@ -114,7 +122,8 @@ func (c *Config) JSON() ([]byte, error) {
 func Default() *Config {
 	return &Config{
 		KeepAlive:     5,
-		Timeout:       30,
+		LoginTimeout:  15,
+		LogoutTimeout: 5,
 		RetryTimer:    15,
 		MinUserID:     1000,
 		StartDelay:    20,
