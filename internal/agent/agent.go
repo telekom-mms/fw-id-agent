@@ -1,11 +1,13 @@
 package agent
 
 import (
+	"errors"
 	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/client"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	"github.com/T-Systems-MMS/fw-id-agent/internal/dbusapi"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/krbmon"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/notify"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
@@ -17,6 +19,7 @@ import (
 type Agent struct {
 	config *config.Config
 	server *api.Server
+	dbus   *dbusapi.Service
 	ccache *krbmon.CCacheMon
 	krbcfg *krbmon.ConfMon
 	tnd    *trustnet.TND
@@ -91,6 +94,8 @@ func (a *Agent) handleKerberosTGTChange() {
 		"StartTime": a.kerberosTGT.StartTime,
 		"EndTime":   a.kerberosTGT.EndTime,
 	}).Info("Kerberos TGT times changed")
+	a.dbus.SetProperty(dbusapi.PropertyKerberosTGTStartTime, a.kerberosTGT.StartTime)
+	a.dbus.SetProperty(dbusapi.PropertyKerberosTGTEndTime, a.kerberosTGT.EndTime)
 }
 
 // handleTrustedNetworkChange handles a change of the trusted network status
@@ -99,6 +104,7 @@ func (a *Agent) handleTrustedNetworkChange() {
 		Info("Trusted network status changed")
 	a.logTND()
 	a.notifyTND()
+	a.dbus.SetProperty(dbusapi.PropertyTrustedNetwork, a.trustedNetwork)
 }
 
 // handleLoginStateChange handles a change of the login state
@@ -122,12 +128,16 @@ func (a *Agent) handleLoginStateChange() {
 			a.notifyLogin()
 		}
 	}
+
+	// set d-bus property
+	a.dbus.SetProperty(dbusapi.PropertyLoginState, a.loginState)
 }
 
 // handleLastKeepAliveChange handles a change of the last keep-alive time
 func (a *Agent) handleLastKeepAliveChange() {
 	log.WithField("lastKeepAlive", a.lastKeepAlive).
 		Info("Last keep-alive time changed")
+	a.dbus.SetProperty(dbusapi.PropertyLastKeepAliveAt, a.lastKeepAlive)
 }
 
 // setKerberosTGT sets the kerberos TGT times
@@ -282,6 +292,27 @@ func (a *Agent) handleRequest(request *api.Request) {
 	}
 }
 
+// handleDBusRequest handles a D-Bus API request
+func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
+	defer request.Close()
+
+	switch request.Name {
+	case dbusapi.RequestReLogin:
+		log.Info("Agent got relogin request from user via D-Bus")
+		if !a.trustedNetwork.Trusted() {
+			// no trusted network, abort
+			log.Error("Agent not connected to a trusted network, not restarting client")
+			request.Error = errors.New("not connected to a trusted network")
+			return
+		}
+
+		// trusted network, restart client
+		log.Info("Agent is restarting client")
+		a.stopClient()
+		a.startClient()
+	}
+}
+
 // start starts the agent's main loop
 func (a *Agent) start() {
 	defer close(a.closed)
@@ -289,6 +320,10 @@ func (a *Agent) start() {
 	// start api server
 	a.server.Start()
 	defer a.server.Stop()
+
+	// start dbus api
+	a.dbus.Start()
+	defer a.dbus.Stop()
 
 	// start ccache monitor
 	a.ccache.Start()
@@ -416,6 +451,13 @@ func (a *Agent) start() {
 			}
 			a.handleRequest(r)
 
+		case r, ok := <-a.dbus.Requests():
+			if !ok {
+				log.Debug("Agent dbus requests channel closed")
+				return
+			}
+			a.handleDBusRequest(r)
+
 		case sleep, ok := <-sleepMon.Events():
 			if !ok {
 				log.Debug("Agent SleepMon events channel closed")
@@ -454,12 +496,14 @@ func (a *Agent) Stop() {
 // NewAgent returns a new agent
 func NewAgent(config *config.Config) *Agent {
 	server := api.NewServer(api.GetUserSocketFile())
+	dbus := dbusapi.NewService()
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
 	tnd := trustnet.NewTND()
 	return &Agent{
 		config: config,
 		server: server,
+		dbus:   dbus,
 		ccache: ccache,
 		krbcfg: krbcfg,
 		tnd:    tnd,
