@@ -93,7 +93,7 @@ func Run() {
 
 	// load config or try defaults
 	cfg := config.Default()
-	if flagIsSet("config") {
+	if flagIsSet(argConfig) {
 		c, err := config.Load(*cfgFile)
 		if err != nil {
 			log.WithError(err).Fatal("Agent could not load config")
