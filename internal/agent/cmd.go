@@ -26,7 +26,8 @@ const (
 	argServiceURL    = "serviceurl"
 	argRealm         = "realm"
 	argKeepAlive     = "keepalive"
-	argTimeout       = "timeout"
+	argLoginTimeout  = "logintimeout"
+	argLogoutTimeout = "logouttimeout"
 	argRetryTimer    = "retrytimer"
 	argTNDServers    = "tndservers"
 	argVerbose       = "verbose"
@@ -74,7 +75,8 @@ func Run() {
 	serviceURL := flag.String(argServiceURL, "", "Set service URL")
 	realm := flag.String(argRealm, "", "Set kerberos realm")
 	keepAlive := flag.Int(argKeepAlive, defaults.KeepAlive, "Set default client keep-alive in `minutes`")
-	timeout := flag.Int(argTimeout, defaults.Timeout, "Set client request timeout in `seconds`")
+	loginTimeout := flag.Int(argLoginTimeout, defaults.LoginTimeout, "Set client login request timeout in `seconds`")
+	logoutTimeout := flag.Int(argLogoutTimeout, defaults.LogoutTimeout, "Set client logout request timeout in `seconds`")
 	retryTimer := flag.Int(argRetryTimer, defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
 	tndServers := flag.String(argTNDServers, "", "Set comma-separated `list` of TND server url:hash pairs")
 	verbose := flag.Bool(argVerbose, defaults.Verbose, "Set verbose output")
@@ -109,8 +111,11 @@ func Run() {
 	if flagIsSet(argKeepAlive) {
 		cfg.KeepAlive = *keepAlive
 	}
-	if flagIsSet(argTimeout) {
-		cfg.Timeout = *timeout
+	if flagIsSet(argLoginTimeout) {
+		cfg.LoginTimeout = *loginTimeout
+	}
+	if flagIsSet(argLogoutTimeout) {
+		cfg.LogoutTimeout = *logoutTimeout
 	}
 	if flagIsSet(argRetryTimer) {
 		cfg.RetryTimer = *retryTimer
