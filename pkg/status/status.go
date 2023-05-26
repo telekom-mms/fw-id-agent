@@ -74,6 +74,7 @@ type KerberosTicket struct {
 	EndTime   int64
 }
 
+// TimesEqual returns whether start and end times are equal
 func (k *KerberosTicket) TimesEqual(start, end int64) bool {
 	return k.StartTime == start && k.EndTime == end
 }
