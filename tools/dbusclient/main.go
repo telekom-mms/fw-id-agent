@@ -27,6 +27,7 @@ func main() {
 	}
 
 	// get initial values of properties
+	config := dbusapi.ConfigInvalid
 	trustedNetwork := dbusapi.TrustedNetworkUnknown
 	loginState := dbusapi.LoginStateUnknown
 	lastKeepAliveAt := dbusapi.LastKeepAliveAtInvalid
@@ -40,12 +41,14 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	getProperty(dbusapi.PropertyConfig, &config)
 	getProperty(dbusapi.PropertyTrustedNetwork, &trustedNetwork)
 	getProperty(dbusapi.PropertyLoginState, &loginState)
 	getProperty(dbusapi.PropertyLastKeepAliveAt, &lastKeepAliveAt)
 	getProperty(dbusapi.PropertyKerberosTGTStartTime, &kerberosTGTStartTime)
 	getProperty(dbusapi.PropertyKerberosTGTEndTime, &kerberosTGTEndTime)
 
+	log.Println("Config:", config)
 	log.Println("TrustedNetwork:", trustedNetwork)
 	log.Println("LoginState:", loginState)
 	log.Println("LastKeepAliveAt:", lastKeepAliveAt)
@@ -78,6 +81,11 @@ func main() {
 		for name, value := range changed {
 			fmt.Printf("Changed property: %s ", name)
 			switch name {
+			case dbusapi.PropertyConfig:
+				if err := value.Store(&config); err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(config)
 			case dbusapi.PropertyTrustedNetwork:
 				if err := value.Store(&trustedNetwork); err != nil {
 					log.Fatal(err)
@@ -114,6 +122,8 @@ func main() {
 		for _, name := range invalid {
 			// not expected to happen currently, but handle it anyway
 			switch name {
+			case dbusapi.PropertyConfig:
+				config = dbusapi.ConfigInvalid
 			case dbusapi.PropertyTrustedNetwork:
 				trustedNetwork = dbusapi.TrustedNetworkUnknown
 			case dbusapi.PropertyLoginState:

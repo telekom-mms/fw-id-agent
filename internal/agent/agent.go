@@ -348,6 +348,13 @@ func (a *Agent) start() {
 	a.setTrustedNetwork(false)
 	a.setLoginState(status.LoginStateLoggedOut)
 
+	// set config D-Bus property
+	b, err := a.config.JSON()
+	if err != nil {
+		log.WithError(err).Fatal("could not convert config to json")
+	}
+	a.dbus.SetProperty(dbusapi.PropertyConfig, string(b))
+
 	// start main loop
 	for {
 		select {

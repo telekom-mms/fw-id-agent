@@ -17,11 +17,17 @@ const (
 
 // Properties
 const (
+	PropertyConfig               = "Config"
 	PropertyTrustedNetwork       = "TrustedNetwork"
 	PropertyLoginState           = "LoginState"
 	PropertyLastKeepAliveAt      = "LastKeepAliveAt"
 	PropertyKerberosTGTStartTime = "KerberosTGTStartTime"
 	PropertyKerberosTGTEndTime   = "KerberosTGTEndTime"
+)
+
+// Property "Config" values
+const (
+	ConfigInvalid = ""
 )
 
 // Property "Trusted Network" states
@@ -184,6 +190,12 @@ func (s *Service) start() {
 	// properties
 	propsSpec := prop.Map{
 		Interface: {
+			PropertyConfig: {
+				Value:    ConfigInvalid,
+				Writable: false,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
+			},
 			PropertyTrustedNetwork: {
 				Value:    TrustedNetworkUnknown,
 				Writable: false,
@@ -242,6 +254,7 @@ func (s *Service) start() {
 
 	// set properties values to emit properties changed signal and make
 	// sure existing clients get updated values after restart
+	props.SetMust(Interface, PropertyConfig, ConfigInvalid)
 	props.SetMust(Interface, PropertyTrustedNetwork, TrustedNetworkNotTrusted)
 	props.SetMust(Interface, PropertyLoginState, LoginStateLoggedOut)
 	props.SetMust(Interface, PropertyLastKeepAliveAt, LastKeepAliveAtInvalid)
