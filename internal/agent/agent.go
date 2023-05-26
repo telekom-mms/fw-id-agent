@@ -6,11 +6,11 @@ import (
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/client"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/dbusapi"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/krbmon"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/notify"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
 	"github.com/T-Systems-MMS/tnd/pkg/trustnet"
 	log "github.com/sirupsen/logrus"
 )
