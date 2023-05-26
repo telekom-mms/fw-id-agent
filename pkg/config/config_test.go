@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+// TestConfigCopy tests Copy of Config
+func TestConfigCopy(t *testing.T) {
+	want := Default()
+	got := want.Copy()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 // TestConfigGetKeepAlive tests GetKeepAlive of Config
 func TestConfigGetKeepAlive(t *testing.T) {
 	config := &Config{KeepAlive: 5}

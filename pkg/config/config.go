@@ -66,6 +66,15 @@ type Config struct {
 	Notifications bool
 }
 
+// Copy returns a copy of the configuration
+func (c *Config) Copy() *Config {
+	if c == nil {
+		return nil
+	}
+	cp := *c
+	return &cp
+}
+
 // GetKeepAlive returns the client keep-alive time as Duration
 func (c *Config) GetKeepAlive() time.Duration {
 	return time.Duration(c.KeepAlive) * time.Minute
