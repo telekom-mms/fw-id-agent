@@ -8,7 +8,7 @@ import (
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/agent"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	log "github.com/sirupsen/logrus"
 )
 

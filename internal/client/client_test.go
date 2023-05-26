@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
 	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	krbConfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/test/testdata"
