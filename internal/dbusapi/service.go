@@ -274,6 +274,14 @@ func (s *Service) start() {
 
 		case <-s.done:
 			log.Debug("D-Bus service stopping")
+			// set properties values to unknown/invalid to emit
+			// properties changed signal and inform clients
+			props.SetMust(Interface, PropertyConfig, ConfigInvalid)
+			props.SetMust(Interface, PropertyTrustedNetwork, TrustedNetworkUnknown)
+			props.SetMust(Interface, PropertyLoginState, LoginStateUnknown)
+			props.SetMust(Interface, PropertyLastKeepAliveAt, LastKeepAliveAtInvalid)
+			props.SetMust(Interface, PropertyKerberosTGTStartTime, KerberosTGTStartTimeInvalid)
+			props.SetMust(Interface, PropertyKerberosTGTEndTime, KerberosTGTEndTimeInvalid)
 			return
 		}
 	}
