@@ -8,6 +8,7 @@ import (
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/agent"
 	"github.com/T-Systems-MMS/fw-id-agent/pkg/client"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -49,6 +50,8 @@ func parseCommandLine() {
 		usage("\nCommands:\n")
 		usage("  status\n")
 		usage("        show agent status\n")
+		usage("  monitor\n")
+		usage("        monitor agent status updates\n")
 		usage("  relogin\n")
 		usage("        relogin agent\n")
 	}
@@ -67,6 +70,7 @@ func parseCommandLine() {
 	switch command {
 	case "status":
 		_ = statusCmd.Parse(os.Args[2:])
+	case "monitor":
 	case "relogin":
 	default:
 		flag.Usage()
@@ -74,32 +78,8 @@ func parseCommandLine() {
 	}
 }
 
-// getStatus retrieves the agent status and prints it
-func getStatus() {
-	// create client
-	c, err := client.NewClient()
-	if err != nil {
-		log.WithError(err).Fatal("could not create client")
-	}
-	defer func() { _ = c.Close() }()
-
-	// query status
-	s, err := c.Query()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if json {
-		// print status as json
-		j, err := s.JSONIndent()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(string(j))
-		return
-	}
-
-	// print status
+// printStatus prints status
+func printStatus(s *status.Status) {
 	fmt.Printf("Trusted Network:    %s\n", s.TrustedNetwork)
 	fmt.Printf("Login State:        %s\n", s.LoginState)
 	if verbose {
@@ -139,6 +119,35 @@ func getStatus() {
 	}
 }
 
+// getStatus retrieves the agent status and prints it
+func getStatus() {
+	// create client
+	c, err := client.NewClient()
+	if err != nil {
+		log.WithError(err).Fatal("could not create client")
+	}
+	defer func() { _ = c.Close() }()
+
+	// query status
+	s, err := c.Query()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if json {
+		// print status as json
+		j, err := s.JSONIndent()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(j))
+		return
+	}
+
+	// print status
+	printStatus(s)
+}
+
 // relogin sends a relogin request to the agent
 func relogin() {
 	// create client
@@ -154,6 +163,26 @@ func relogin() {
 	}
 }
 
+// monitor subscribes to status updates from the agent and displays them
+func monitor() {
+	// create client
+	c, err := client.NewClient()
+	if err != nil {
+		log.WithError(err).Fatal("could not create client")
+	}
+	defer func() { _ = c.Close() }()
+
+	// get status updates
+	updates, err := c.Subscribe()
+	if err != nil {
+		log.WithError(err).Fatal("error subscribing to status updates")
+	}
+	for u := range updates {
+		log.Println("Got status update:")
+		printStatus(u)
+	}
+}
+
 // Run is the main entry point
 func Run() {
 	parseCommandLine()
@@ -161,6 +190,8 @@ func Run() {
 	switch command {
 	case "status":
 		getStatus()
+	case "monitor":
+		monitor()
 	case "relogin":
 		relogin()
 	}
