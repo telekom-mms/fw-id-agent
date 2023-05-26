@@ -79,7 +79,7 @@ func parseCommandLine() {
 }
 
 // printStatus prints status
-func printStatus(s *status.Status) {
+func printStatus(s *status.Status, verbose bool) {
 	fmt.Printf("Trusted Network:    %s\n", s.TrustedNetwork)
 	fmt.Printf("Login State:        %s\n", s.LoginState)
 	if verbose {
@@ -145,7 +145,7 @@ func getStatus() {
 	}
 
 	// print status
-	printStatus(s)
+	printStatus(s, verbose)
 }
 
 // relogin sends a relogin request to the agent
@@ -179,7 +179,7 @@ func monitor() {
 	}
 	for u := range updates {
 		log.Println("Got status update:")
-		printStatus(u)
+		printStatus(u, true)
 	}
 }
 
