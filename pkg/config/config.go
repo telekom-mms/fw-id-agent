@@ -131,6 +131,17 @@ func Default() *Config {
 	}
 }
 
+// NewFromJSON returns a new config parsed from JSON in b
+func NewFromJSON(b []byte) (*Config, error) {
+	s := &Config{}
+	err := json.Unmarshal(b, s)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // Load loads the json configuration from file path
 func Load(path string) (*Config, error) {
 	// read file contents

@@ -106,6 +106,22 @@ func TestDefault(t *testing.T) {
 	}
 }
 
+// TestNewFromJSON tests NewFromJSON
+func TestNewFromJSON(t *testing.T) {
+	want := Default()
+	b, err := want.JSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := NewFromJSON(b)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 // TestLoad tests Load
 func TestLoad(t *testing.T) {
 	// test invalid path
