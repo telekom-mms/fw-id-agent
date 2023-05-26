@@ -4,7 +4,27 @@ import (
 	"log"
 	"reflect"
 	"testing"
+
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
 )
+
+// TestStatusCopy tests Copy of Status
+func TestStatusCopy(t *testing.T) {
+	want := &Status{
+		Config:         config.Default(),
+		TrustedNetwork: TrustedNetworkTrusted,
+		LoginState:     LoginStateLoggedIn,
+		LastKeepAlive:  2023,
+		KerberosTGT: KerberosTicket{
+			StartTime: 2023,
+			EndTime:   2024,
+		},
+	}
+	got := want.Copy()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
 
 // TestJSON tests JSON and NewFromJSON of Status
 func TestJSON(t *testing.T) {

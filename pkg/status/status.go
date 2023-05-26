@@ -87,6 +87,17 @@ type Status struct {
 	KerberosTGT    KerberosTicket
 }
 
+// Copy returns a copy of Status
+func (s *Status) Copy() *Status {
+	return &Status{
+		Config:         s.Config.Copy(),
+		TrustedNetwork: s.TrustedNetwork,
+		LoginState:     s.LoginState,
+		LastKeepAlive:  s.LastKeepAlive,
+		KerberosTGT:    s.KerberosTGT,
+	}
+}
+
 // JSON returns the Status as JSON
 func (s *Status) JSON() ([]byte, error) {
 	b, err := json.Marshal(s)
