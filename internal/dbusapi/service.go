@@ -55,6 +55,11 @@ const (
 	KerberosTGTEndTimeInvalid int64 = -1
 )
 
+// Methods
+const (
+	MethodReLogin = Interface + ".ReLogin"
+)
+
 // Request Names
 const (
 	RequestReLogin = "ReLogin"
