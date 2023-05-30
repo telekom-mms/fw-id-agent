@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+// TestConfigCopy tests Copy of Config
+func TestConfigCopy(t *testing.T) {
+	want := Default()
+	got := want.Copy()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 // TestConfigGetKeepAlive tests GetKeepAlive of Config
 func TestConfigGetKeepAlive(t *testing.T) {
 	config := &Config{KeepAlive: 5}
@@ -101,6 +110,22 @@ func TestDefault(t *testing.T) {
 		Notifications: true,
 	}
 	got := Default()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// TestNewFromJSON tests NewFromJSON
+func TestNewFromJSON(t *testing.T) {
+	want := Default()
+	b, err := want.JSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := NewFromJSON(b)
+	if err != nil {
+		t.Error(err)
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}

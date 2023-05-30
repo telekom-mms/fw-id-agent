@@ -3,7 +3,7 @@ package status
 import (
 	"encoding/json"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
 )
 
 // TrustedNetwork is the current trusted network state
@@ -74,6 +74,7 @@ type KerberosTicket struct {
 	EndTime   int64
 }
 
+// TimesEqual returns whether start and end times are equal
 func (k *KerberosTicket) TimesEqual(start, end int64) bool {
 	return k.StartTime == start && k.EndTime == end
 }
@@ -85,6 +86,17 @@ type Status struct {
 	LoginState     LoginState
 	LastKeepAlive  int64
 	KerberosTGT    KerberosTicket
+}
+
+// Copy returns a copy of Status
+func (s *Status) Copy() *Status {
+	return &Status{
+		Config:         s.Config.Copy(),
+		TrustedNetwork: s.TrustedNetwork,
+		LoginState:     s.LoginState,
+		LastKeepAlive:  s.LastKeepAlive,
+		KerberosTGT:    s.KerberosTGT,
+	}
 }
 
 // JSON returns the Status as JSON

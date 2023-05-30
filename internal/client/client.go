@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	krbClient "github.com/jcmturner/gokrb5/v8/client"
 	krbConfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"

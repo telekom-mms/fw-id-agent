@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 

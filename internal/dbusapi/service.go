@@ -17,11 +17,17 @@ const (
 
 // Properties
 const (
+	PropertyConfig               = "Config"
 	PropertyTrustedNetwork       = "TrustedNetwork"
 	PropertyLoginState           = "LoginState"
 	PropertyLastKeepAliveAt      = "LastKeepAliveAt"
 	PropertyKerberosTGTStartTime = "KerberosTGTStartTime"
 	PropertyKerberosTGTEndTime   = "KerberosTGTEndTime"
+)
+
+// Property "Config" values
+const (
+	ConfigInvalid = ""
 )
 
 // Property "Trusted Network" states
@@ -53,6 +59,11 @@ const (
 // Property "Kerberos TGT End Time" values
 const (
 	KerberosTGTEndTimeInvalid int64 = -1
+)
+
+// Methods
+const (
+	MethodReLogin = Interface + ".ReLogin"
 )
 
 // Request Names
@@ -179,6 +190,12 @@ func (s *Service) start() {
 	// properties
 	propsSpec := prop.Map{
 		Interface: {
+			PropertyConfig: {
+				Value:    ConfigInvalid,
+				Writable: false,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
+			},
 			PropertyTrustedNetwork: {
 				Value:    TrustedNetworkUnknown,
 				Writable: false,
@@ -237,6 +254,7 @@ func (s *Service) start() {
 
 	// set properties values to emit properties changed signal and make
 	// sure existing clients get updated values after restart
+	props.SetMust(Interface, PropertyConfig, ConfigInvalid)
 	props.SetMust(Interface, PropertyTrustedNetwork, TrustedNetworkNotTrusted)
 	props.SetMust(Interface, PropertyLoginState, LoginStateLoggedOut)
 	props.SetMust(Interface, PropertyLastKeepAliveAt, LastKeepAliveAtInvalid)
@@ -256,6 +274,14 @@ func (s *Service) start() {
 
 		case <-s.done:
 			log.Debug("D-Bus service stopping")
+			// set properties values to unknown/invalid to emit
+			// properties changed signal and inform clients
+			props.SetMust(Interface, PropertyConfig, ConfigInvalid)
+			props.SetMust(Interface, PropertyTrustedNetwork, TrustedNetworkUnknown)
+			props.SetMust(Interface, PropertyLoginState, LoginStateUnknown)
+			props.SetMust(Interface, PropertyLastKeepAliveAt, LastKeepAliveAtInvalid)
+			props.SetMust(Interface, PropertyKerberosTGTStartTime, KerberosTGTStartTimeInvalid)
+			props.SetMust(Interface, PropertyKerberosTGTEndTime, KerberosTGTEndTimeInvalid)
 			return
 		}
 	}

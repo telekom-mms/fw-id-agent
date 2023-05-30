@@ -4,13 +4,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/client"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/config"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/dbusapi"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/krbmon"
 	"github.com/T-Systems-MMS/fw-id-agent/internal/notify"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	"github.com/T-Systems-MMS/tnd/pkg/trustnet"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,7 +17,6 @@ import (
 // Agent is the firewall identity Agent
 type Agent struct {
 	config *config.Config
-	server *api.Server
 	dbus   *dbusapi.Service
 	ccache *krbmon.CCacheMon
 	krbcfg *krbmon.ConfMon
@@ -247,51 +245,6 @@ func (a *Agent) stopClient() {
 	a.setLoginState(status.LoginStateLoggedOut)
 }
 
-// handleRequest handles an api request
-func (a *Agent) handleRequest(request *api.Request) {
-	switch request.Type() {
-	case api.TypeQuery:
-		// create status
-		s := status.New()
-		s.Config = a.config
-		s.TrustedNetwork = a.trustedNetwork
-		s.LoginState = a.loginState
-		s.LastKeepAlive = a.lastKeepAlive
-		s.KerberosTGT = a.kerberosTGT
-
-		// convert status to json and set it as reply
-		b, err := s.JSON()
-		if err != nil {
-			log.WithError(err).Fatal("Agent could not convert status to json")
-		}
-		request.Reply(b)
-
-		// send reply and close request
-		go request.Close()
-
-	case api.TypeRelogin:
-		log.Info("Agent got relogin request from user")
-		if !a.trustedNetwork.Trusted() {
-			// no trusted network, abort
-			log.Error("Agent not connected to a trusted network, not restarting client")
-			request.Error("Not connected to a trusted network")
-
-			// send reply and close request
-			go request.Close()
-
-			return
-		}
-
-		// trusted network, restart client
-		log.Info("Agent is restarting client")
-		a.stopClient()
-		a.startClient()
-
-		// send reply and close request
-		go request.Close()
-	}
-}
-
 // handleDBusRequest handles a D-Bus API request
 func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 	defer request.Close()
@@ -316,10 +269,6 @@ func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 // start starts the agent's main loop
 func (a *Agent) start() {
 	defer close(a.closed)
-
-	// start api server
-	a.server.Start()
-	defer a.server.Stop()
 
 	// start dbus api
 	a.dbus.Start()
@@ -347,6 +296,13 @@ func (a *Agent) start() {
 	// login state to "logged out"
 	a.setTrustedNetwork(false)
 	a.setLoginState(status.LoginStateLoggedOut)
+
+	// set config D-Bus property
+	b, err := a.config.JSON()
+	if err != nil {
+		log.WithError(err).Fatal("could not convert config to json")
+	}
+	a.dbus.SetProperty(dbusapi.PropertyConfig, string(b))
 
 	// start main loop
 	for {
@@ -444,13 +400,6 @@ func (a *Agent) start() {
 				a.startClient()
 			}
 
-		case r, ok := <-a.server.Requests():
-			if !ok {
-				log.Debug("Agent server requests channel closed")
-				return
-			}
-			a.handleRequest(r)
-
 		case r, ok := <-a.dbus.Requests():
 			if !ok {
 				log.Debug("Agent dbus requests channel closed")
@@ -495,14 +444,12 @@ func (a *Agent) Stop() {
 
 // NewAgent returns a new agent
 func NewAgent(config *config.Config) *Agent {
-	server := api.NewServer(api.GetUserSocketFile())
 	dbus := dbusapi.NewService()
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
 	tnd := trustnet.NewTND()
 	return &Agent{
 		config: config,
-		server: server,
 		dbus:   dbus,
 		ccache: ccache,
 		krbcfg: krbcfg,

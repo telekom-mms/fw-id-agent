@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/T-Systems-MMS/fw-id-agent/internal/agent"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/api"
-	"github.com/T-Systems-MMS/fw-id-agent/internal/status"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/client"
+	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,6 +50,8 @@ func parseCommandLine() {
 		usage("\nCommands:\n")
 		usage("  status\n")
 		usage("        show agent status\n")
+		usage("  monitor\n")
+		usage("        monitor agent status updates\n")
 		usage("  relogin\n")
 		usage("        relogin agent\n")
 	}
@@ -68,6 +70,7 @@ func parseCommandLine() {
 	switch command {
 	case "status":
 		_ = statusCmd.Parse(os.Args[2:])
+	case "monitor":
 	case "relogin":
 	default:
 		flag.Usage()
@@ -75,32 +78,13 @@ func parseCommandLine() {
 	}
 }
 
-// getStatus retrieves the agent status and prints it
-func getStatus() {
-	client := api.NewClient(api.GetUserSocketFile())
-	b := client.Query()
-	if b == nil {
-		return
-	}
-	status, err := status.NewFromJSON(b)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if json {
-		j, err := status.JSONIndent()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(string(j))
-		return
-	}
-
-	fmt.Printf("Trusted Network:    %s\n", status.TrustedNetwork)
-	fmt.Printf("Login State:        %s\n", status.LoginState)
+// printStatus prints status
+func printStatus(s *status.Status, verbose bool) {
+	fmt.Printf("Trusted Network:    %s\n", s.TrustedNetwork)
+	fmt.Printf("Login State:        %s\n", s.LoginState)
 	if verbose {
 		// last keep-alive info
-		lastKeepAlive := time.Unix(status.LastKeepAlive, 0)
+		lastKeepAlive := time.Unix(s.LastKeepAlive, 0)
 		if lastKeepAlive.IsZero() {
 			fmt.Printf("Last Keep-Alive:    0\n")
 		} else {
@@ -111,7 +95,7 @@ func getStatus() {
 		fmt.Printf("Kerberos TGT:\n")
 
 		// kerberos tgt start time
-		tgtStartTime := time.Unix(status.KerberosTGT.StartTime, 0)
+		tgtStartTime := time.Unix(s.KerberosTGT.StartTime, 0)
 		if tgtStartTime.IsZero() {
 			fmt.Printf("- Start Time:       0\n")
 		} else {
@@ -119,7 +103,7 @@ func getStatus() {
 		}
 
 		// kerberos tgt end time
-		tgtEndTime := time.Unix(status.KerberosTGT.EndTime, 0)
+		tgtEndTime := time.Unix(s.KerberosTGT.EndTime, 0)
 		if tgtEndTime.IsZero() {
 			fmt.Printf("- End Time:         0\n")
 		} else {
@@ -127,7 +111,7 @@ func getStatus() {
 		}
 
 		// agent config
-		config, err := status.Config.JSON()
+		config, err := s.Config.JSON()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -135,18 +119,67 @@ func getStatus() {
 	}
 }
 
+// getStatus retrieves the agent status and prints it
+func getStatus() {
+	// create client
+	c, err := client.NewClient()
+	if err != nil {
+		log.WithError(err).Fatal("could not create client")
+	}
+	defer func() { _ = c.Close() }()
+
+	// query status
+	s, err := c.Query()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if json {
+		// print status as json
+		j, err := s.JSONIndent()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(j))
+		return
+	}
+
+	// print status
+	printStatus(s, verbose)
+}
+
 // relogin sends a relogin request to the agent
 func relogin() {
-	// send request to agent
-	client := api.NewClient(api.GetUserSocketFile())
-	msg := api.NewMessage(api.TypeRelogin, nil)
-	reply := client.Request(msg)
+	// create client
+	c, err := client.NewClient()
+	if err != nil {
+		log.WithError(err).Fatal("could not create client")
+	}
+	defer func() { _ = c.Close() }()
 
-	// handle response
-	switch reply.Type {
-	case api.TypeOK:
-	case api.TypeError:
-		log.WithField("error", string(reply.Value)).Error("Agent sent error reply")
+	// send request to agent
+	if err := c.ReLogin(); err != nil {
+		log.WithError(err).Error("re-login request failed")
+	}
+}
+
+// monitor subscribes to status updates from the agent and displays them
+func monitor() {
+	// create client
+	c, err := client.NewClient()
+	if err != nil {
+		log.WithError(err).Fatal("could not create client")
+	}
+	defer func() { _ = c.Close() }()
+
+	// get status updates
+	updates, err := c.Subscribe()
+	if err != nil {
+		log.WithError(err).Fatal("error subscribing to status updates")
+	}
+	for u := range updates {
+		log.Println("Got status update:")
+		printStatus(u, true)
 	}
 }
 
@@ -157,6 +190,8 @@ func Run() {
 	switch command {
 	case "status":
 		getStatus()
+	case "monitor":
+		monitor()
 	case "relogin":
 		relogin()
 	}
