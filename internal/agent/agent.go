@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/T-Systems-MMS/tnd/pkg/trustnet"
 	log "github.com/sirupsen/logrus"
 	"github.com/telekom-mms/fw-id-agent/internal/client"
 	"github.com/telekom-mms/fw-id-agent/internal/dbusapi"
@@ -12,6 +11,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/internal/notify"
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
+	"github.com/telekom-mms/tnd/pkg/trustnet"
 )
 
 // Agent is the firewall identity Agent
