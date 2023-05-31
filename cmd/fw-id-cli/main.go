@@ -1,6 +1,6 @@
 package main
 
-import "github.com/T-Systems-MMS/fw-id-agent/internal/cli"
+import "github.com/telekom-mms/fw-id-agent/internal/cli"
 
 func main() {
 	cli.Run()

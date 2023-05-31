@@ -1,4 +1,4 @@
-module github.com/T-Systems-MMS/fw-id-agent
+module github.com/telekom-mms/fw-id-agent
 
 go 1.18
 

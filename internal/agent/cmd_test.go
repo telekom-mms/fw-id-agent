@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
+	"github.com/telekom-mms/fw-id-agent/pkg/config"
 )
 
 // TestParseTNDServers tests parseTNDServers

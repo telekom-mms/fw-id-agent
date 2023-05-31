@@ -3,7 +3,7 @@ package status
 import (
 	"encoding/json"
 
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
+	"github.com/telekom-mms/fw-id-agent/pkg/config"
 )
 
 // TrustedNetwork is the current trusted network state

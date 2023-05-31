@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/dbusapi"
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	"github.com/godbus/dbus/v5"
+	"github.com/telekom-mms/fw-id-agent/internal/dbusapi"
+	"github.com/telekom-mms/fw-id-agent/pkg/config"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
 // Client is an FW-ID-Agent client

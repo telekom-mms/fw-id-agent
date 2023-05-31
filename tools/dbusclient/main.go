@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/dbusapi"
 	"github.com/godbus/dbus/v5"
 	log "github.com/sirupsen/logrus"
+	"github.com/telekom-mms/fw-id-agent/internal/dbusapi"
 )
 
 func main() {

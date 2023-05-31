@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	"github.com/godbus/dbus/v5"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
 // TestDBusClientQuery tests Query of DBusClient

@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	krbClient "github.com/jcmturner/gokrb5/v8/client"
 	krbConfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/spnego"
 	log "github.com/sirupsen/logrus"
+	"github.com/telekom-mms/fw-id-agent/pkg/config"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
 // Client is an identity agent client

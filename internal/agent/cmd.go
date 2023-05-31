@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/config"
 	log "github.com/sirupsen/logrus"
+	"github.com/telekom-mms/fw-id-agent/pkg/config"
 )
 
 var (
