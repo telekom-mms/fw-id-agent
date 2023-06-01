@@ -12,6 +12,7 @@ import (
 
 // Client is an FW-ID-Agent client
 type Client interface {
+	Ping() error
 	Query() (*status.Status, error)
 	Subscribe() (chan *status.Status, error)
 	ReLogin() error
@@ -83,6 +84,17 @@ func updateStatusFromProperties(s *status.Status, props map[string]dbus.Variant)
 	}
 
 	return nil
+}
+
+// ping calls the ping method to check if FW-ID-Agent is running
+var ping = func(d *DBusClient) error {
+	return d.conn.Object(dbusapi.Interface, dbusapi.Path).
+		Call("org.freedesktop.DBus.Peer.Ping", 0).Err
+}
+
+// Ping pings the FW-ID-Agent to check if it is running
+func (d *DBusClient) Ping() error {
+	return ping(d)
 }
 
 // query retrieves the D-Bus properties from the agent
@@ -220,6 +232,15 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 	// handle properties
 	go func() {
 		defer close(d.updates)
+
+		// send initial status
+		select {
+		case d.updates <- status.Copy():
+		case <-d.done:
+			return
+		}
+
+		// handle signals
 		for s := range c {
 			// get status update from signal
 			update := handlePropertiesChanged(s, status.Copy())
