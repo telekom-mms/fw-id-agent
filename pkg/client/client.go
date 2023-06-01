@@ -232,6 +232,15 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 	// handle properties
 	go func() {
 		defer close(d.updates)
+
+		// send initial status
+		select {
+		case d.updates <- status.Copy():
+		case <-d.done:
+			return
+		}
+
+		// handle signals
 		for s := range c {
 			// get status update from signal
 			update := handlePropertiesChanged(s, status.Copy())
