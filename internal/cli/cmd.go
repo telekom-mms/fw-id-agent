@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/T-Systems-MMS/fw-id-agent/internal/agent"
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/client"
-	"github.com/T-Systems-MMS/fw-id-agent/pkg/status"
 	log "github.com/sirupsen/logrus"
+	"github.com/telekom-mms/fw-id-agent/internal/agent"
+	"github.com/telekom-mms/fw-id-agent/pkg/client"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
 var (

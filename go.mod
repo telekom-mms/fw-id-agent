@@ -1,13 +1,13 @@
-module github.com/T-Systems-MMS/fw-id-agent
+module github.com/telekom-mms/fw-id-agent
 
 go 1.18
 
 require (
-	github.com/T-Systems-MMS/tnd v0.0.0-20230404085219-434ecc2a5379
 	github.com/gen2brain/beeep v0.0.0-20230307103607-6e717729cb4f
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/sirupsen/logrus v1.9.0
+	github.com/telekom-mms/tnd v0.0.0-20230531180948-b1baa08c638b
 )
 
 require (
