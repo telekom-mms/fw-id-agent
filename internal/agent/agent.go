@@ -8,7 +8,6 @@ import (
 	"github.com/telekom-mms/fw-id-agent/internal/client"
 	"github.com/telekom-mms/fw-id-agent/internal/dbusapi"
 	"github.com/telekom-mms/fw-id-agent/internal/krbmon"
-	"github.com/telekom-mms/fw-id-agent/internal/notify"
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
 	"github.com/telekom-mms/tnd/pkg/trustnet"
@@ -60,32 +59,6 @@ func (a *Agent) logLogin() {
 	log.Info("Agent logged in successfully")
 }
 
-// notifyTND notifies the user if we are connected to a trusted network
-func (a *Agent) notifyTND() {
-	if !a.config.Notifications {
-		// desktop notifications disabled
-		return
-	}
-	if !a.trustedNetwork.Trusted() {
-		notify.Notify("No Trusted Network", "No trusted network detected")
-		return
-	}
-	notify.Notify("Trusted Network", "Trusted network detected")
-}
-
-// notifyLogin notifies the user if the identity agent is logged in
-func (a *Agent) notifyLogin() {
-	if !a.config.Notifications {
-		// desktop notifications disabled
-		return
-	}
-	if !a.loggedIn {
-		notify.Notify("Identity Agent Logout", "Identity Agent logged out")
-		return
-	}
-	notify.Notify("Identity Agent Login", "Identity Agent logged in successfully")
-}
-
 // handleKerberosTGTChange handles a change of the kerberos TGT times
 func (a *Agent) handleKerberosTGTChange() {
 	log.WithFields(log.Fields{
@@ -101,7 +74,6 @@ func (a *Agent) handleTrustedNetworkChange() {
 	log.WithField("trustedNetwork", a.trustedNetwork).
 		Info("Trusted network status changed")
 	a.logTND()
-	a.notifyTND()
 	a.dbus.SetProperty(dbusapi.PropertyTrustedNetwork, a.trustedNetwork)
 }
 
@@ -117,13 +89,11 @@ func (a *Agent) handleLoginStateChange() {
 		if a.loggedIn {
 			a.loggedIn = false
 			a.logLogin()
-			a.notifyLogin()
 		}
 	case status.LoginStateLoggedIn:
 		if !a.loggedIn {
 			a.loggedIn = true
 			a.logLogin()
-			a.notifyLogin()
 		}
 	}
 
