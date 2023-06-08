@@ -75,8 +75,9 @@ nfpms:
     # changelog: "changelog.yml"
     scripts:
       postinstall: build/package/postinstall.sh
-      preremove: build/package/preremove.sh
       postremove: build/package/postremove.sh
+    dependencies:
+      - "init-system-helpers (>= 1.62)"
     deb:
       lintian_overrides:
         - "no-manual-page"
