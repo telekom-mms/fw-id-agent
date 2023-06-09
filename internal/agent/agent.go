@@ -40,6 +40,9 @@ type Agent struct {
 
 	// last client keep-alive
 	lastKeepAlive int64
+
+	// notifier
+	notifier *notify.Notifier
 }
 
 // logTND logs if we are connected to a trusted network
@@ -67,10 +70,10 @@ func (a *Agent) notifyTND() {
 		return
 	}
 	if !a.trustedNetwork.Trusted() {
-		notify.Notify("No Trusted Network", "No trusted network detected")
+		a.notifier.Notify("No Trusted Network", "No trusted network detected")
 		return
 	}
-	notify.Notify("Trusted Network", "Trusted network detected")
+	a.notifier.Notify("Trusted Network", "Trusted network detected")
 }
 
 // notifyLogin notifies the user if the identity agent is logged in
@@ -80,10 +83,10 @@ func (a *Agent) notifyLogin() {
 		return
 	}
 	if !a.loggedIn {
-		notify.Notify("Identity Agent Logout", "Identity Agent logged out")
+		a.notifier.Notify("Identity Agent Logout", "Identity Agent logged out")
 		return
 	}
-	notify.Notify("Identity Agent Login", "Identity Agent logged in successfully")
+	a.notifier.Notify("Identity Agent Login", "Identity Agent logged in successfully")
 }
 
 // handleKerberosTGTChange handles a change of the kerberos TGT times
@@ -438,6 +441,7 @@ func (a *Agent) Start() {
 
 // Stop stops the agent
 func (a *Agent) Stop() {
+	a.notifier.Close()
 	close(a.done)
 	<-a.closed
 }
@@ -448,13 +452,15 @@ func NewAgent(config *config.Config) *Agent {
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
 	tnd := trustnet.NewTND()
+	notifier := notify.NewNotifier()
 	return &Agent{
-		config: config,
-		dbus:   dbus,
-		ccache: ccache,
-		krbcfg: krbcfg,
-		tnd:    tnd,
-		done:   make(chan struct{}),
-		closed: make(chan struct{}),
+		config:   config,
+		dbus:     dbus,
+		ccache:   ccache,
+		krbcfg:   krbcfg,
+		tnd:      tnd,
+		done:     make(chan struct{}),
+		closed:   make(chan struct{}),
+		notifier: notifier,
 	}
 }
