@@ -1,7 +1,11 @@
 [Unit]
 Description=Firewall Identity Agent
+Requires=dbus.service
+After=dbus.service
 
 [Service]
+Type=dbus
+BusName=com.telekom_mms.fw_id_agent.Agent
 ExecStart=/usr/bin/fw-id-agent -config /etc/fw-id-agent.json
 KillSignal=SIGINT
 
