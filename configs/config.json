@@ -19,6 +19,6 @@
 	},
 	"Verbose": true,
 	"MinUserID": 1000,
-	"StartDelay": 20,
+	"StartDelay": 0,
 	"Notifications": true
 }

@@ -106,7 +106,7 @@ func TestDefault(t *testing.T) {
 		LogoutTimeout: 5,
 		RetryTimer:    15,
 		MinUserID:     1000,
-		StartDelay:    20,
+		StartDelay:    0,
 		Notifications: true,
 	}
 	got := Default()
@@ -178,7 +178,7 @@ func TestLoad(t *testing.T) {
         },
 	"Verbose": true,
 	"MinUserID": 1000,
-	"StartDelay": 20,
+	"StartDelay": 0,
 	"Notifications": true
 }`,
 		`{
@@ -238,7 +238,7 @@ func TestLoad(t *testing.T) {
 			},
 			Verbose:       true,
 			MinUserID:     1000,
-			StartDelay:    20,
+			StartDelay:    0,
 			Notifications: true,
 		}
 		if !reflect.DeepEqual(want, cfg) {
