@@ -135,7 +135,7 @@ func Default() *Config {
 		LogoutTimeout: 5,
 		RetryTimer:    15,
 		MinUserID:     1000,
-		StartDelay:    20,
+		StartDelay:    0,
 		Notifications: true,
 	}
 }
