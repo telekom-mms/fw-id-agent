@@ -12,7 +12,7 @@ builds:
       - amd64
     main: ./cmd/fw-id-agent/main.go
     ldflags:
-      - -s -w -X github.com/T-Systems-MMS/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
+      - -s -w -X github.com/telekom-mms/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
   - id: fw-id-cli
     binary: fw-id-cli
     env:
@@ -23,7 +23,7 @@ builds:
       - amd64
     main: ./cmd/fw-id-cli/main.go
     ldflags:
-      - -s -w -X github.com/T-Systems-MMS/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
+      - -s -w -X github.com/telekom-mms/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
 archives:
   - format: tar.gz
     rlcp: true
