@@ -89,8 +89,26 @@ func (c *CCacheMon) isCCacheFileEvent(event fsnotify.Event) bool {
 
 // handleCCacheFileEvent handles a ccache file event
 func (c *CCacheMon) handleCCacheFileEvent() {
+	// read ccache file
+	b, err := os.ReadFile(c.cCacheFile)
+	if err != nil {
+		log.WithError(err).Error("Kerberos CCache Monitor could not read credential cache file")
+		return
+	}
+
+	// check file length to make sure loading the credential cache below
+	// does not fail. this is a rough estimate of a minimum ccache file
+	// that contains: the version indicator (2 bytes), no header, minimum
+	// default principal (8 bytes), one minimum credential (59 bytes). See
+	// https://web.mit.edu/kerberos/krb5-devel/doc/formats/ccache_file_format.html
+	if len(b) < 69 {
+		log.Error("Kerberos CCache Monitor read invalid credential cache file")
+		return
+	}
+
 	// load ccache
-	cCache, err := credentials.LoadCCache(c.cCacheFile)
+	cCache := new(credentials.CCache)
+	err = cCache.Unmarshal(b)
 	if err != nil {
 		log.WithError(err).Error("Kerberos CCache Monitor could not load credential cache")
 		return
