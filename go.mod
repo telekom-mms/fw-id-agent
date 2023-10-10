@@ -6,8 +6,8 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
-	github.com/sirupsen/logrus v1.9.2
-	github.com/telekom-mms/tnd v0.1.0
+	github.com/sirupsen/logrus v1.9.3
+	github.com/telekom-mms/tnd v0.2.0
 )
 
 require (
