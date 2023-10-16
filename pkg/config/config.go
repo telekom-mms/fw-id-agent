@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"time"
+
+	"github.com/telekom-mms/tnd/pkg/tnd"
 )
 
 // TNDHTTPSConfig is a https configuration in the
@@ -25,6 +27,7 @@ func (t *TNDHTTPSConfig) Valid() bool {
 // agent configuration
 type TNDConfig struct {
 	HTTPSServers []TNDHTTPSConfig
+	Config       *tnd.Config
 }
 
 // Valid returns whether TNDConfig is valid
@@ -37,7 +40,7 @@ func (t *TNDConfig) Valid() bool {
 			return false
 		}
 	}
-	return true
+	return t.Config.Valid()
 }
 
 // Config is the agent configuration
@@ -72,6 +75,10 @@ func (c *Config) Copy() *Config {
 		return nil
 	}
 	cp := *c
+	if c.TND.Config != nil {
+		cp.TND.Config = tnd.NewConfig()
+		*cp.TND.Config = *c.TND.Config
+	}
 	return &cp
 }
 
@@ -134,6 +141,7 @@ func Default() *Config {
 		LoginTimeout:  15,
 		LogoutTimeout: 5,
 		RetryTimer:    15,
+		TND:           TNDConfig{Config: tnd.NewConfig()},
 		MinUserID:     1000,
 		StartDelay:    0,
 		Notifications: true,
