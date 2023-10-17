@@ -10,13 +10,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// D-Bus object path and interface
+// D-Bus object path and interface.
 const (
 	Path      = "/com/telekom_mms/fw_id_agent/Agent"
 	Interface = "com.telekom_mms.fw_id_agent.Agent"
 )
 
-// Properties
+// Properties.
 const (
 	PropertyConfig               = "Config"
 	PropertyTrustedNetwork       = "TrustedNetwork"
@@ -26,19 +26,19 @@ const (
 	PropertyKerberosTGTEndTime   = "KerberosTGTEndTime"
 )
 
-// Property "Config" values
+// Property "Config" values.
 const (
 	ConfigInvalid = ""
 )
 
-// Property "Trusted Network" states
+// Property "Trusted Network" states.
 const (
 	TrustedNetworkUnknown uint32 = iota
 	TrustedNetworkNotTrusted
 	TrustedNetworkTrusted
 )
 
-// Property "Login State" states
+// Property "Login State" states.
 const (
 	LoginStateUnknown uint32 = iota
 	LoginStateLoggedOut
@@ -47,32 +47,32 @@ const (
 	LoginStateLoggingOut
 )
 
-// Property "Last Keep Alive At" values
+// Property "Last Keep Alive At" values.
 const (
 	LastKeepAliveAtInvalid int64 = -1
 )
 
-// Property "Kerberos TGT Start Time" values
+// Property "Kerberos TGT Start Time" values.
 const (
 	KerberosTGTStartTimeInvalid int64 = -1
 )
 
-// Property "Kerberos TGT End Time" values
+// Property "Kerberos TGT End Time" values.
 const (
 	KerberosTGTEndTimeInvalid int64 = -1
 )
 
-// Methods
+// Methods.
 const (
 	MethodReLogin = Interface + ".ReLogin"
 )
 
-// Request Names
+// Request Names.
 const (
 	RequestReLogin = "ReLogin"
 )
 
-// Request is a D-Bus client request
+// Request is a D-Bus client request.
 type Request struct {
 	Name       string
 	Parameters []any
@@ -83,12 +83,12 @@ type Request struct {
 	done chan struct{}
 }
 
-// Close completes the request handling
+// Close completes the request handling.
 func (r *Request) Close() {
 	close(r.wait)
 }
 
-// Wait waits for the completion of request handling
+// Wait waits for the completion of request handling.
 func (r *Request) Wait() {
 	select {
 	case <-r.wait:
@@ -97,13 +97,13 @@ func (r *Request) Wait() {
 	}
 }
 
-// agent defines agent interface methods
+// agent defines agent interface methods.
 type agent struct {
 	requests chan *Request
 	done     chan struct{}
 }
 
-// ReLogin is the "ReLogin" method of the Agent D-Bus interface
+// ReLogin is the "ReLogin" method of the Agent D-Bus interface.
 func (a agent) ReLogin(sender dbus.Sender) *dbus.Error {
 	log.WithField("sender", sender).Debug("Received D-Bus ReLogin() call")
 	request := &Request{
@@ -124,13 +124,13 @@ func (a agent) ReLogin(sender dbus.Sender) *dbus.Error {
 	return nil
 }
 
-// propertyUpdate is an update of a property
+// propertyUpdate is an update of a property.
 type propertyUpdate struct {
 	name  string
 	value any
 }
 
-// Service is a D-Bus Service
+// Service is a D-Bus Service.
 type Service struct {
 	requests chan *Request
 	propUps  chan *propertyUpdate
@@ -138,30 +138,30 @@ type Service struct {
 	closed   chan struct{}
 }
 
-// dbusConn is an interface for dbus.Conn to allow for testing
+// dbusConn is an interface for dbus.Conn to allow for testing.
 type dbusConn interface {
 	Close() error
 	Export(v any, path dbus.ObjectPath, iface string) error
 	RequestName(name string, flags dbus.RequestNameFlags) (dbus.RequestNameReply, error)
 }
 
-// dbusConnectSessionBus encapsulates dbus.ConnectSessionBus to allow for testing
+// dbusConnectSessionBus encapsulates dbus.ConnectSessionBus to allow for testing.
 var dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
 	return dbus.ConnectSessionBus(opts...)
 }
 
-// propProperties is an interface for prop.Properties to allow for testing
+// propProperties is an interface for prop.Properties to allow for testing.
 type propProperties interface {
 	Introspection(iface string) []introspect.Property
 	SetMust(iface, property string, v any)
 }
 
-// propExport encapsulates prop.Export to allow for testing
+// propExport encapsulates prop.Export to allow for testing.
 var propExport = func(conn dbusConn, path dbus.ObjectPath, props prop.Map) (propProperties, error) {
 	return prop.Export(conn.(*dbus.Conn), path, props)
 }
 
-// start starts the service
+// start starts the service.
 func (s *Service) start() {
 	defer close(s.closed)
 
@@ -288,23 +288,23 @@ func (s *Service) start() {
 	}
 }
 
-// Start starts the service
+// Start starts the service.
 func (s *Service) Start() {
 	go s.start()
 }
 
-// Stop stops the service
+// Stop stops the service.
 func (s *Service) Stop() {
 	close(s.done)
 	<-s.closed
 }
 
-// Requests returns the requests channel of service
+// Requests returns the requests channel of service.
 func (s *Service) Requests() chan *Request {
 	return s.requests
 }
 
-// SetProperty sets property with name to value
+// SetProperty sets property with name to value.
 func (s *Service) SetProperty(name string, value any) {
 	select {
 	case s.propUps <- &propertyUpdate{name, value}:
@@ -312,7 +312,7 @@ func (s *Service) SetProperty(name string, value any) {
 	}
 }
 
-// NewService returns a new service
+// NewService returns a new service.
 func NewService() *Service {
 	return &Service{
 		requests: make(chan *Request),

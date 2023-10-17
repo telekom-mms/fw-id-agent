@@ -19,7 +19,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
-// Client is an identity agent client
+// Client is an identity agent client.
 type Client struct {
 	config    *config.Config
 	keepAlive time.Duration
@@ -33,10 +33,10 @@ type Client struct {
 	krb5conf *krbConfig.Config
 }
 
-// Error is an identity agent client error
+// Error is an identity agent client error.
 type Error int8
 
-// Errors
+// Errors.
 const (
 	UserNotSet         Error = 001
 	TokenError         Error = 002
@@ -44,7 +44,7 @@ const (
 	BackendError       Error = 101
 )
 
-// LoginResponse is a login response
+// LoginResponse is a login response.
 type LoginResponse struct {
 	KeepAlive int `json:"keep-alive"`
 }
@@ -101,7 +101,7 @@ func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *
 	return
 }
 
-// login sends a login request to the identity service
+// login sends a login request to the identity service.
 func (c *Client) login() (err error) {
 	// signal "logging in" state
 	c.results <- status.LoginStateLoggingIn
@@ -157,7 +157,7 @@ func (c *Client) login() (err error) {
 	return
 }
 
-// logout sends a logout request to the identity service
+// logout sends a logout request to the identity service.
 func (c *Client) logout() (err error) {
 	// signal "logging out" state
 	c.results <- status.LoginStateLoggingOut
@@ -170,7 +170,7 @@ func (c *Client) logout() (err error) {
 	return
 }
 
-// start starts executing the client
+// start starts executing the client.
 func (c *Client) start() {
 	defer close(c.results)
 
@@ -205,12 +205,12 @@ func (c *Client) start() {
 	}
 }
 
-// Start starts the client {
+// Start starts the client.
 func (c *Client) Start() {
 	go c.start()
 }
 
-// Stop stops the client
+// Stop stops the client.
 func (c *Client) Stop() {
 	close(c.done)
 	for range c.results {
@@ -218,12 +218,12 @@ func (c *Client) Stop() {
 	}
 }
 
-// Results returns the result channel
+// Results returns the result channel.
 func (c *Client) Results() chan status.LoginState {
 	return c.results
 }
 
-// SetCCache sets the kerberos CCache in the client
+// SetCCache sets the kerberos CCache in the client.
 func (c *Client) SetCCache(ccache *credentials.CCache) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -231,7 +231,7 @@ func (c *Client) SetCCache(ccache *credentials.CCache) {
 	c.ccache = ccache
 }
 
-// GetCCache returns the kerberos CCache in the client
+// GetCCache returns the kerberos CCache in the client.
 func (c *Client) GetCCache() *credentials.CCache {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -239,7 +239,7 @@ func (c *Client) GetCCache() *credentials.CCache {
 	return c.ccache
 }
 
-// SetKrb5Conf sets the kerberos config in the client
+// SetKrb5Conf sets the kerberos config in the client.
 func (c *Client) SetKrb5Conf(conf *krbConfig.Config) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -247,7 +247,7 @@ func (c *Client) SetKrb5Conf(conf *krbConfig.Config) {
 	c.krb5conf = conf
 }
 
-// GetKrb5Conf returns the kerberos config in the client
+// GetKrb5Conf returns the kerberos config in the client.
 func (c *Client) GetKrb5Conf() *krbConfig.Config {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -255,7 +255,7 @@ func (c *Client) GetKrb5Conf() *krbConfig.Config {
 	return c.krb5conf
 }
 
-// NewClient returns a new Client
+// NewClient returns a new Client.
 func NewClient(config *config.Config, ccache *credentials.CCache, krb5conf *krbConfig.Config) *Client {
 	return &Client{
 		results:   make(chan status.LoginState),

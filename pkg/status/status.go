@@ -7,22 +7,22 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 )
 
-// TrustedNetwork is the current trusted network state
+// TrustedNetwork is the current trusted network state.
 type TrustedNetwork uint32
 
-// TrustedNetwork states
+// TrustedNetwork states.
 const (
 	TrustedNetworkUnknown TrustedNetwork = iota
 	TrustedNetworkNotTrusted
 	TrustedNetworkTrusted
 )
 
-// Trusted returns whether TrustedNetwork is state "trusted"
+// Trusted returns whether TrustedNetwork is state "trusted".
 func (t TrustedNetwork) Trusted() bool {
 	return t == TrustedNetworkTrusted
 }
 
-// String returns t as string
+// String returns t as string.
 func (t TrustedNetwork) String() string {
 	switch t {
 	case TrustedNetworkUnknown:
@@ -35,10 +35,10 @@ func (t TrustedNetwork) String() string {
 	return ""
 }
 
-// LoginState is the current login state
+// LoginState is the current login state.
 type LoginState uint32
 
-// LoginState states
+// LoginState states.
 const (
 	LoginStateUnknown LoginState = iota
 	LoginStateLoggedOut
@@ -47,12 +47,12 @@ const (
 	LoginStateLoggingOut
 )
 
-// LoggedIn returns whether LoginState is state "logged in"
+// LoggedIn returns whether LoginState is state "logged in".
 func (l LoginState) LoggedIn() bool {
 	return l == LoginStateLoggedIn
 }
 
-// String returns l as string
+// String returns l as string.
 func (l LoginState) String() string {
 	switch l {
 	case LoginStateUnknown:
@@ -69,18 +69,18 @@ func (l LoginState) String() string {
 	return ""
 }
 
-// KerberosTicket is kerberos ticket info in the agent status
+// KerberosTicket is kerberos ticket info in the agent status.
 type KerberosTicket struct {
 	StartTime int64
 	EndTime   int64
 }
 
-// TimesEqual returns whether start and end times are equal
+// TimesEqual returns whether start and end times are equal.
 func (k *KerberosTicket) TimesEqual(start, end int64) bool {
 	return k.StartTime == start && k.EndTime == end
 }
 
-// Status is the agent status
+// Status is the agent status.
 type Status struct {
 	Config         *config.Config
 	TrustedNetwork TrustedNetwork
@@ -89,7 +89,7 @@ type Status struct {
 	KerberosTGT    KerberosTicket
 }
 
-// Copy returns a copy of Status
+// Copy returns a copy of Status.
 func (s *Status) Copy() *Status {
 	return &Status{
 		Config:         s.Config.Copy(),
@@ -100,7 +100,7 @@ func (s *Status) Copy() *Status {
 	}
 }
 
-// JSON returns the Status as JSON
+// JSON returns the Status as JSON.
 func (s *Status) JSON() ([]byte, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
@@ -110,7 +110,7 @@ func (s *Status) JSON() ([]byte, error) {
 	return b, nil
 }
 
-// JSONIndent returns the Status as indented JSON
+// JSONIndent returns the Status as indented JSON.
 func (s *Status) JSONIndent() ([]byte, error) {
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *Status) JSONIndent() ([]byte, error) {
 	return b, nil
 }
 
-// NewFromJSON returns a new Status parsed from JSON in b
+// NewFromJSON returns a new Status parsed from JSON in b.
 func NewFromJSON(b []byte) (*Status, error) {
 	s := New()
 	err := json.Unmarshal(b, s)
@@ -131,7 +131,7 @@ func NewFromJSON(b []byte) (*Status, error) {
 	return s, nil
 }
 
-// New returns a new Status
+// New returns a new Status.
 func New() *Status {
 	return &Status{}
 }

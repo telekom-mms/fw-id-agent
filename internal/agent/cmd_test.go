@@ -7,7 +7,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 )
 
-// TestParseTNDServers tests parseTNDServers
+// TestParseTNDServers tests parseTNDServers.
 func TestParseTNDServers(t *testing.T) {
 	// test invalid
 	_, ok := parseTNDServers("")

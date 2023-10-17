@@ -8,7 +8,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 )
 
-// TestStatusCopy tests Copy of Status
+// TestStatusCopy tests Copy of Status.
 func TestStatusCopy(t *testing.T) {
 	want := &Status{
 		Config:         config.Default(),
@@ -26,7 +26,7 @@ func TestStatusCopy(t *testing.T) {
 	}
 }
 
-// TestJSON tests JSON and NewFromJSON of Status
+// TestJSON tests JSON and NewFromJSON of Status.
 func TestJSON(t *testing.T) {
 	s := New()
 	b, err := s.JSON()
@@ -42,7 +42,7 @@ func TestJSON(t *testing.T) {
 	}
 }
 
-// TestJSONIndent tests JSONIndent and NewFromJSON of Status
+// TestJSONIndent tests JSONIndent and NewFromJSON of Status.
 func TestJSONIndent(t *testing.T) {
 	s := New()
 	b, err := s.JSONIndent()
@@ -58,7 +58,7 @@ func TestJSONIndent(t *testing.T) {
 	}
 }
 
-// TestNew tests New
+// TestNew tests New.
 func TestNew(t *testing.T) {
 	s := New()
 	if s == nil {
