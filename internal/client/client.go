@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -124,7 +123,7 @@ func (c *Client) login() (err error) {
 
 	// read response
 	var body []byte
-	body, err = ioutil.ReadAll(response.Body)
+	body, err = io.ReadAll(response.Body)
 	if err != nil {
 		err = fmt.Errorf("%d: error reading login response body: %w", BackendError, err)
 		c.results <- status.LoginStateLoggedOut
