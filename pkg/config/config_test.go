@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -143,7 +142,7 @@ func TestLoad(t *testing.T) {
 	}
 
 	// test empty config file
-	empty, err := ioutil.TempFile("", "fw-id-agent-config-test")
+	empty, err := os.CreateTemp("", "fw-id-agent-config-test")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -209,7 +208,7 @@ func TestLoad(t *testing.T) {
 }`,
 	} {
 
-		valid, err := ioutil.TempFile("", "fw-id-agent-config-test")
+		valid, err := os.CreateTemp("", "fw-id-agent-config-test")
 		if err != nil {
 			log.Fatal(err)
 		}
