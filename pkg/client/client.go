@@ -1,3 +1,4 @@
+// Package client contains the FW-ID-Agent client.
 package client
 
 import (

@@ -34,7 +34,7 @@ func TestSleepMonHandleSignal(t *testing.T) {
 }
 
 // TestSleepMonStartStop tests Start and Stop of SleepMon
-func TestSleepMonStartStop(t *testing.T) {
+func TestSleepMonStartStop(_ *testing.T) {
 	s := NewSleepMon()
 	s.Start()
 	s.Stop()

@@ -1,3 +1,4 @@
+// Package config contains the agent config
 package config
 
 import (

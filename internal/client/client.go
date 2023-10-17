@@ -1,3 +1,4 @@
+// Package client contains the identity agent client.
 package client
 
 import (

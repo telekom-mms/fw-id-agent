@@ -1,3 +1,4 @@
+// Package agent contains the firewall identity agent.
 package agent
 
 import (

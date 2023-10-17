@@ -1,3 +1,4 @@
+// Package krbmon contains kerberos monitoring components.
 package krbmon
 
 import (

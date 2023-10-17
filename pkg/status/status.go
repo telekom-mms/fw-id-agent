@@ -1,3 +1,4 @@
+// Package status contains the agent status.
 package status
 
 import (

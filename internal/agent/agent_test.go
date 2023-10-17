@@ -7,7 +7,7 @@ import (
 )
 
 // TestAgentStartStop tests Start and Stop of Agent
-func TestAgentStartStop(t *testing.T) {
+func TestAgentStartStop(_ *testing.T) {
 	config := &config.Config{}
 	agent := NewAgent(config)
 	agent.Start()

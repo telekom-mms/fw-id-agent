@@ -1,3 +1,4 @@
+// Package cli contains the agent command line interface.
 package cli
 
 import (
