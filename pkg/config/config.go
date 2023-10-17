@@ -30,6 +30,17 @@ type TNDConfig struct {
 	Config       *tnd.Config
 }
 
+// Copy returns a copy of TNDConfig
+func (t *TNDConfig) Copy() TNDConfig {
+	cp := TNDConfig{}
+	cp.HTTPSServers = append(t.HTTPSServers[:0:0], t.HTTPSServers...)
+	if t.Config != nil {
+		cp.Config = tnd.NewConfig()
+		*cp.Config = *t.Config
+	}
+	return cp
+}
+
 // Valid returns whether TNDConfig is valid
 func (t *TNDConfig) Valid() bool {
 	if len(t.HTTPSServers) == 0 {
@@ -75,10 +86,7 @@ func (c *Config) Copy() *Config {
 		return nil
 	}
 	cp := *c
-	if c.TND.Config != nil {
-		cp.TND.Config = tnd.NewConfig()
-		*cp.TND.Config = *c.TND.Config
-	}
+	cp.TND = c.TND.Copy()
 	return &cp
 }
 

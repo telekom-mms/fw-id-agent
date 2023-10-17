@@ -12,10 +12,20 @@ import (
 
 // TestConfigCopy tests Copy of Config
 func TestConfigCopy(t *testing.T) {
+	// test defaults
 	want := Default()
 	got := want.Copy()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
+	}
+
+	// test with TND server
+	o := Default()
+	o.TND.HTTPSServers = []TNDHTTPSConfig{{"example", "hash"}}
+	n := o.Copy()
+	n.TND.HTTPSServers[0].URL = "example2"
+	if reflect.DeepEqual(o, n) {
+		t.Errorf("%v and %v should not be equal after change", o, n)
 	}
 }
 
