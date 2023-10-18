@@ -28,22 +28,25 @@ type Notifier struct {
 }
 
 // dbusSessionConn returns a D-Bus connection.
-func dbusSessionConn() (*dbus.Conn, error) {
+var dbusSessionConn = func() (Conn, error) {
 	return dbus.ConnectSessionBus()
 }
 
 // NewNotifier returns a new Notifier.
-func NewNotifier() *Notifier {
+func NewNotifier() (*Notifier, error) {
 	conn, err := dbusSessionConn()
 	if err != nil {
-		log.WithError(err).Fatal("Could not connect to D-Bus session bus")
+		return nil, err
 	}
 	n := &Notifier{conn: conn, notificationID: rand.Uint32()}
-	return n
+	return n, nil
 }
 
 // Notify sends a notification to the user.
 func (n *Notifier) Notify(title, message string) {
+	if n == nil {
+		return
+	}
 	obj := n.conn.Object(iface, dbus.ObjectPath(path))
 	call := obj.Call(method, 0, "", n.notificationID, "", title, message, []string{}, map[string]dbus.Variant{}, int32(5))
 	if call.Err != nil {
@@ -53,5 +56,8 @@ func (n *Notifier) Notify(title, message string) {
 
 // Close closes the Notifier.
 func (n *Notifier) Close() {
+	if n == nil {
+		return
+	}
 	_ = n.conn.Close()
 }

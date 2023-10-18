@@ -453,7 +453,10 @@ func NewAgent(config *config.Config) *Agent {
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
 	tnd := tnd.NewDetector(tnd.NewConfig())
-	notifier := notify.NewNotifier()
+	notifier, err := notify.NewNotifier()
+	if err != nil {
+		log.WithError(err).Error("Agent could not create notifier, no desktop notifications will be available")
+	}
 	return &Agent{
 		config:   config,
 		dbus:     dbus,
