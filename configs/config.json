@@ -15,7 +15,13 @@
 				"URL":"https://tnd2.mycompany.com:443",
 				"Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
 			}
-		]
+		],
+		"Config":{
+				"WaitCheck": 1000000000,
+				"HTTPSTimeout": 5000000000,
+				"UntrustedTimer": 30000000000,
+				"TrustedTimer": 60000000000
+		}
 	},
 	"Verbose": true,
 	"MinUserID": 1000,

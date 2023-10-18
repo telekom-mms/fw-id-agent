@@ -11,7 +11,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/internal/notify"
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
-	"github.com/telekom-mms/tnd/pkg/trustnet"
+	"github.com/telekom-mms/tnd/pkg/tnd"
 )
 
 // Agent is the firewall identity Agent
@@ -20,7 +20,7 @@ type Agent struct {
 	dbus   *dbusapi.Service
 	ccache *krbmon.CCacheMon
 	krbcfg *krbmon.ConfMon
-	tnd    *trustnet.TND
+	tnd    tnd.TND
 	client *client.Client
 	login  chan status.LoginState
 	done   chan struct{}
@@ -451,7 +451,7 @@ func NewAgent(config *config.Config) *Agent {
 	dbus := dbusapi.NewService()
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
-	tnd := trustnet.NewTND()
+	tnd := tnd.NewDetector(tnd.NewConfig())
 	notifier := notify.NewNotifier()
 	return &Agent{
 		config:   config,

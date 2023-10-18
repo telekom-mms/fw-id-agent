@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/telekom-mms/tnd/pkg/tnd"
 )
 
 // TestConfigCopy tests Copy of Config
@@ -105,6 +107,7 @@ func TestDefault(t *testing.T) {
 		LoginTimeout:  15,
 		LogoutTimeout: 5,
 		RetryTimer:    15,
+		TND:           TNDConfig{Config: tnd.NewConfig()},
 		MinUserID:     1000,
 		StartDelay:    0,
 		Notifications: true,
@@ -174,7 +177,13 @@ func TestLoad(t *testing.T) {
                                 "URL":"https://tnd2.mycompany.com:443",
                                 "Hash":"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
                         }
-                ]
+                ],
+		"Config":{
+                                "WaitCheck": 1000000000,
+                                "HTTPSTimeout": 5000000000,
+                                "UntrustedTimer": 30000000000,
+                                "TrustedTimer": 60000000000
+		}
         },
 	"Verbose": true,
 	"MinUserID": 1000,
@@ -215,6 +224,7 @@ func TestLoad(t *testing.T) {
 		cfg, _ := Load(valid.Name())
 		if cfg == nil {
 			t.Errorf("got nil, want != nil")
+			return
 		}
 
 		want := &Config{
@@ -235,11 +245,15 @@ func TestLoad(t *testing.T) {
 						Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
 					},
 				},
+				tnd.NewConfig(),
 			},
 			Verbose:       true,
 			MinUserID:     1000,
 			StartDelay:    0,
 			Notifications: true,
+		}
+		if !reflect.DeepEqual(want.TND.Config, cfg.TND.Config) {
+			t.Errorf("got %v, want %v", cfg.TND.Config, want.TND.Config)
 		}
 		if !reflect.DeepEqual(want, cfg) {
 			t.Errorf("got %v, want %v", cfg, want)
