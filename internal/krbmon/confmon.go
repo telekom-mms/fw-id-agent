@@ -10,16 +10,16 @@ import (
 )
 
 const (
-	// krb5conf is the file path of the krb5.conf file
+	// krb5conf is the file path of the krb5.conf file.
 	krb5conf = "/etc/krb5.conf"
 )
 
-// ConfUpdate is a krb5.conf monitor update
+// ConfUpdate is a krb5.conf monitor update.
 type ConfUpdate struct {
 	Config *config.Config
 }
 
-// ConfMon is a krb5.conf monitor
+// ConfMon is a krb5.conf monitor.
 type ConfMon struct {
 	confDir  string
 	confFile string
@@ -28,7 +28,7 @@ type ConfMon struct {
 	done     chan struct{}
 }
 
-// sendUpdate sends an update over the updates channel
+// sendUpdate sends an update over the updates channel.
 func (c *ConfMon) sendUpdate(update *ConfUpdate) {
 	// send an update or abort if we are shutting down
 	select {
@@ -37,12 +37,12 @@ func (c *ConfMon) sendUpdate(update *ConfUpdate) {
 	}
 }
 
-// isConfigFileEvent checks if event is a config file event
+// isConfigFileEvent checks if event is a config file event.
 func (c *ConfMon) isConfigFileEvent(event fsnotify.Event) bool {
 	return event.Name == c.confFile
 }
 
-// handleConfigFileEvent handles a config file event
+// handleConfigFileEvent handles a config file event.
 func (c *ConfMon) handleConfigFileEvent() {
 	// load config file
 	cfg, err := config.Load(krb5conf)
@@ -62,7 +62,7 @@ func (c *ConfMon) handleConfigFileEvent() {
 	c.sendUpdate(&ConfUpdate{Config: c.config})
 }
 
-// start starts the config monitor
+// start starts the config monitor.
 func (c *ConfMon) start() {
 	defer close(c.updates)
 
@@ -121,12 +121,12 @@ func (c *ConfMon) start() {
 	}
 }
 
-// Start starts the config monitor
+// Start starts the config monitor.
 func (c *ConfMon) Start() {
 	go c.start()
 }
 
-// Stop stops the config monitor
+// Stop stops the config monitor.
 func (c *ConfMon) Stop() {
 	close(c.done)
 	for range c.updates {
@@ -134,12 +134,12 @@ func (c *ConfMon) Stop() {
 	}
 }
 
-// Updates returns the channel for config updates
+// Updates returns the channel for config updates.
 func (c *ConfMon) Updates() chan *ConfUpdate {
 	return c.updates
 }
 
-// NewConfMon returns a new krb5.conf monitor
+// NewConfMon returns a new krb5.conf monitor.
 func NewConfMon() *ConfMon {
 	return &ConfMon{
 		updates: make(chan *ConfUpdate),

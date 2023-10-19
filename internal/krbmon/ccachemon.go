@@ -1,3 +1,4 @@
+// Package krbmon contains kerberos monitoring components.
 package krbmon
 
 import (
@@ -14,12 +15,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// CCacheUpdate is a ccache monitor update
+// CCacheUpdate is a ccache monitor update.
 type CCacheUpdate struct {
 	CCache *credentials.CCache
 }
 
-// GetTGT returns the TGT for realm in the ccache
+// GetTGT returns the TGT for realm in the ccache.
 func (u *CCacheUpdate) GetTGT(realm string) *credentials.Credential {
 	name := types.NewPrincipalName(2, "krbtgt/"+realm)
 	if tgt, ok := u.CCache.GetEntry(name); ok {
@@ -28,7 +29,7 @@ func (u *CCacheUpdate) GetTGT(realm string) *credentials.Credential {
 	return nil
 }
 
-// CCacheMon is a ccache monitor
+// CCacheMon is a ccache monitor.
 type CCacheMon struct {
 	cCacheDir  string
 	cCacheFile string
@@ -37,7 +38,7 @@ type CCacheMon struct {
 	done       chan struct{}
 }
 
-// sendUpdate sends an update over the updates channel
+// sendUpdate sends an update over the updates channel.
 func (c *CCacheMon) sendUpdate(update *CCacheUpdate) {
 	// send an update or abort if we are shutting down
 	select {
@@ -47,7 +48,7 @@ func (c *CCacheMon) sendUpdate(update *CCacheUpdate) {
 }
 
 // createCredentialCacheEnvVar creates an expected environment variable value
-// for the credential cache based on the current user ID
+// for the credential cache based on the current user ID.
 func createCredentialCacheEnvVar() string {
 	osUser, err := user.Current()
 	if err != nil {
@@ -58,7 +59,7 @@ func createCredentialCacheEnvVar() string {
 	return fmt.Sprintf("FILE:/tmp/krb5cc_%s", osUser.Uid)
 }
 
-// getCredentialsCacheFilename returns the ccache file name
+// getCredentialsCacheFilename returns the ccache file name.
 func getCredentialCacheFilename() (string, error) {
 	envVar := os.Getenv("KRB5CCNAME")
 	if envVar == "" {
@@ -82,12 +83,12 @@ func getCredentialCacheFilename() (string, error) {
 	return strings.TrimPrefix(envVar, "FILE:"), nil
 }
 
-// isCCacheFileEvent checks if event is a ccache file event
+// isCCacheFileEvent checks if event is a ccache file event.
 func (c *CCacheMon) isCCacheFileEvent(event fsnotify.Event) bool {
 	return event.Name == c.cCacheFile
 }
 
-// handleCCacheFileEvent handles a ccache file event
+// handleCCacheFileEvent handles a ccache file event.
 func (c *CCacheMon) handleCCacheFileEvent() {
 	// read ccache file
 	b, err := os.ReadFile(c.cCacheFile)
@@ -124,7 +125,7 @@ func (c *CCacheMon) handleCCacheFileEvent() {
 	c.sendUpdate(&CCacheUpdate{CCache: c.cCache})
 }
 
-// start starts the ccache monitor
+// start starts the ccache monitor.
 func (c *CCacheMon) start() {
 	defer close(c.updates)
 
@@ -190,12 +191,12 @@ func (c *CCacheMon) start() {
 	}
 }
 
-// Start starts the ccache monitor
+// Start starts the ccache monitor.
 func (c *CCacheMon) Start() {
 	go c.start()
 }
 
-// Stop stops the ccache monitor
+// Stop stops the ccache monitor.
 func (c *CCacheMon) Stop() {
 	close(c.done)
 	for range c.updates {
@@ -203,12 +204,12 @@ func (c *CCacheMon) Stop() {
 	}
 }
 
-// Updates returns the channel for ccache updates
+// Updates returns the channel for ccache updates.
 func (c *CCacheMon) Updates() chan *CCacheUpdate {
 	return c.updates
 }
 
-// NewCCacheMon returns a new ccache monitor
+// NewCCacheMon returns a new ccache monitor.
 func NewCCacheMon() *CCacheMon {
 	return &CCacheMon{
 		updates: make(chan *CCacheUpdate),

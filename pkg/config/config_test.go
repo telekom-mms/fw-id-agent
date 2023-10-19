@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -11,16 +10,26 @@ import (
 	"github.com/telekom-mms/tnd/pkg/tnd"
 )
 
-// TestConfigCopy tests Copy of Config
+// TestConfigCopy tests Copy of Config.
 func TestConfigCopy(t *testing.T) {
+	// test defaults
 	want := Default()
 	got := want.Copy()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
+
+	// test with TND server
+	o := Default()
+	o.TND.HTTPSServers = []TNDHTTPSConfig{{"example", "hash"}}
+	n := o.Copy()
+	n.TND.HTTPSServers[0].URL = "example2"
+	if reflect.DeepEqual(o, n) {
+		t.Errorf("%v and %v should not be equal after change", o, n)
+	}
 }
 
-// TestConfigGetKeepAlive tests GetKeepAlive of Config
+// TestConfigGetKeepAlive tests GetKeepAlive of Config.
 func TestConfigGetKeepAlive(t *testing.T) {
 	config := &Config{KeepAlive: 5}
 	want := 5 * time.Minute
@@ -30,7 +39,7 @@ func TestConfigGetKeepAlive(t *testing.T) {
 	}
 }
 
-// TestConfigGetLoginTimeout tests GetLoginTimeout of Config
+// TestConfigGetLoginTimeout tests GetLoginTimeout of Config.
 func TestConfigGetLoginTimeout(t *testing.T) {
 	config := &Config{LoginTimeout: 15}
 	want := 15 * time.Second
@@ -40,7 +49,7 @@ func TestConfigGetLoginTimeout(t *testing.T) {
 	}
 }
 
-// TestConfigGetLogoutTimeout tests GetLoginTimeout of Config
+// TestConfigGetLogoutTimeout tests GetLoginTimeout of Config.
 func TestConfigGetLogoutTimeout(t *testing.T) {
 	config := &Config{LogoutTimeout: 5}
 	want := 5 * time.Second
@@ -50,7 +59,7 @@ func TestConfigGetLogoutTimeout(t *testing.T) {
 	}
 }
 
-// TestConfigGetRetryTimer tests GetRetryTimer of Config
+// TestConfigGetRetryTimer tests GetRetryTimer of Config.
 func TestConfigGetRetryTimer(t *testing.T) {
 	config := &Config{RetryTimer: 15}
 	want := 15 * time.Second
@@ -60,7 +69,7 @@ func TestConfigGetRetryTimer(t *testing.T) {
 	}
 }
 
-// TestConfigGetStartDelay tests GetStartDelay of Config
+// TestConfigGetStartDelay tests GetStartDelay of Config.
 func TestConfigGetStartDelay(t *testing.T) {
 	config := &Config{StartDelay: 20}
 	want := 20 * time.Second
@@ -70,7 +79,7 @@ func TestConfigGetStartDelay(t *testing.T) {
 	}
 }
 
-// TestConfigValid tests Valid of Config
+// TestConfigValid tests Valid of Config.
 func TestConfigValid(t *testing.T) {
 	// invalid
 	want := false
@@ -100,7 +109,7 @@ func TestConfigValid(t *testing.T) {
 	}
 }
 
-// TestDefault tests Default
+// TestDefault tests Default.
 func TestDefault(t *testing.T) {
 	want := &Config{
 		KeepAlive:     5,
@@ -118,7 +127,7 @@ func TestDefault(t *testing.T) {
 	}
 }
 
-// TestNewFromJSON tests NewFromJSON
+// TestNewFromJSON tests NewFromJSON.
 func TestNewFromJSON(t *testing.T) {
 	want := Default()
 	b, err := want.JSON()
@@ -134,7 +143,7 @@ func TestNewFromJSON(t *testing.T) {
 	}
 }
 
-// TestLoad tests Load
+// TestLoad tests Load.
 func TestLoad(t *testing.T) {
 	// test invalid path
 	_, err := Load("does not exist")
@@ -143,7 +152,7 @@ func TestLoad(t *testing.T) {
 	}
 
 	// test empty config file
-	empty, err := ioutil.TempFile("", "fw-id-agent-config-test")
+	empty, err := os.CreateTemp("", "fw-id-agent-config-test")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -209,7 +218,7 @@ func TestLoad(t *testing.T) {
 }`,
 	} {
 
-		valid, err := ioutil.TempFile("", "fw-id-agent-config-test")
+		valid, err := os.CreateTemp("", "fw-id-agent-config-test")
 		if err != nil {
 			log.Fatal(err)
 		}

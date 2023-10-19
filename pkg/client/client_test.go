@@ -8,7 +8,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
-// TestDBusClientPing tests Ping of DBusClient
+// TestDBusClientPing tests Ping of DBusClient.
 func TestDBusClientPing(t *testing.T) {
 	client := &DBusClient{}
 	ping = func(*DBusClient) error {
@@ -20,7 +20,7 @@ func TestDBusClientPing(t *testing.T) {
 	}
 }
 
-// TestDBusClientQuery tests Query of DBusClient
+// TestDBusClientQuery tests Query of DBusClient.
 func TestDBusClientQuery(t *testing.T) {
 	client := &DBusClient{}
 	want := status.New()
@@ -36,7 +36,7 @@ func TestDBusClientQuery(t *testing.T) {
 	}
 }
 
-// TestDBusClientReLogin tests ReLogin of DBusClient
+// TestDBusClientReLogin tests ReLogin of DBusClient.
 func TestDBusClientReLogin(t *testing.T) {
 	client := &DBusClient{}
 	relogin = func(d *DBusClient) error {
@@ -48,7 +48,7 @@ func TestDBusClientReLogin(t *testing.T) {
 	}
 }
 
-// TestNewDBusClient tests NewDBusClient
+// TestNewDBusClient tests NewDBusClient.
 func TestNewDBusClient(t *testing.T) {
 	dbusConnectSessionBus = func() (*dbus.Conn, error) {
 		return nil, nil
@@ -62,7 +62,7 @@ func TestNewDBusClient(t *testing.T) {
 	}
 }
 
-// TestNewClient tests NewClient
+// TestNewClient tests NewClient.
 func TestNewClient(t *testing.T) {
 	dbusConnectSessionBus = func() (*dbus.Conn, error) {
 		return nil, nil

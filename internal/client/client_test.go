@@ -14,7 +14,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
-// initTestServer initializes a test server
+// initTestServer initializes a test server.
 func initTestServer(expected string) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -25,7 +25,7 @@ func initTestServer(expected string) *httptest.Server {
 	return server
 }
 
-// getTestCCache returns a credentials cache for testing
+// getTestCCache returns a credentials cache for testing.
 func getTestCCache(t *testing.T) *credentials.CCache {
 	b, err := hex.DecodeString(testdata.CCACHE_TEST)
 	if err != nil {
@@ -39,7 +39,7 @@ func getTestCCache(t *testing.T) *credentials.CCache {
 	return ccache
 }
 
-// TestClientLogin tests login of Client, successful login
+// TestClientLogin tests login of Client, successful login.
 func TestClientLogin(t *testing.T) {
 	// create server
 	expected := `{ "keep-alive": 42 }`
@@ -79,7 +79,7 @@ func TestClientLogin(t *testing.T) {
 	}
 }
 
-// TestClientLoginNoResult tests login of Client, successful login but invalid response
+// TestClientLoginNoResult tests login of Client, successful login but invalid response.
 func TestClientLoginNoResult(t *testing.T) {
 	// create server
 	expected := `{ "nonsense": "xyz"}`
@@ -116,7 +116,7 @@ func TestClientLoginNoResult(t *testing.T) {
 	}
 }
 
-// TestClientLoginFailed tests login of Client, failed login
+// TestClientLoginFailed tests login of Client, failed login.
 func TestClientLoginFailed(t *testing.T) {
 	// create server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +157,7 @@ func TestClientLoginFailed(t *testing.T) {
 	}
 }
 
-// TestClientLogout tests logout of client
+// TestClientLogout tests logout of client.
 func TestClientLogout(t *testing.T) {
 	// create server
 	expected := `{}`

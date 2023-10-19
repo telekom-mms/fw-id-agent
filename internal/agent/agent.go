@@ -1,3 +1,4 @@
+// Package agent contains the firewall identity agent.
 package agent
 
 import (
@@ -14,7 +15,7 @@ import (
 	"github.com/telekom-mms/tnd/pkg/tnd"
 )
 
-// Agent is the firewall identity Agent
+// Agent is the firewall identity Agent.
 type Agent struct {
 	config *config.Config
 	dbus   *dbusapi.Service
@@ -45,7 +46,7 @@ type Agent struct {
 	notifier *notify.Notifier
 }
 
-// logTND logs if we are connected to a trusted network
+// logTND logs whether we are connected to a trusted network.
 func (a *Agent) logTND() {
 	if !a.trustedNetwork.Trusted() {
 		log.Info("Agent is not connected to a trusted network")
@@ -54,7 +55,7 @@ func (a *Agent) logTND() {
 	log.Info("Agent is connected to a trusted network")
 }
 
-// logLogin logs if the identity agent is logged in
+// logLogin logs whether the identity agent is logged in.
 func (a *Agent) logLogin() {
 	if !a.loggedIn {
 		log.Info("Agent logged out")
@@ -63,7 +64,7 @@ func (a *Agent) logLogin() {
 	log.Info("Agent logged in successfully")
 }
 
-// notifyTND notifies the user if we are connected to a trusted network
+// notifyTND notifies the user whether we are connected to a trusted network.
 func (a *Agent) notifyTND() {
 	if !a.config.Notifications {
 		// desktop notifications disabled
@@ -76,7 +77,7 @@ func (a *Agent) notifyTND() {
 	a.notifier.Notify("Trusted Network", "Trusted network detected")
 }
 
-// notifyLogin notifies the user if the identity agent is logged in
+// notifyLogin notifies the user whether the identity agent is logged in.
 func (a *Agent) notifyLogin() {
 	if !a.config.Notifications {
 		// desktop notifications disabled
@@ -89,7 +90,7 @@ func (a *Agent) notifyLogin() {
 	a.notifier.Notify("Identity Agent Login", "Identity Agent logged in successfully")
 }
 
-// handleKerberosTGTChange handles a change of the kerberos TGT times
+// handleKerberosTGTChange handles a change of the kerberos TGT times.
 func (a *Agent) handleKerberosTGTChange() {
 	log.WithFields(log.Fields{
 		"StartTime": a.kerberosTGT.StartTime,
@@ -99,7 +100,7 @@ func (a *Agent) handleKerberosTGTChange() {
 	a.dbus.SetProperty(dbusapi.PropertyKerberosTGTEndTime, a.kerberosTGT.EndTime)
 }
 
-// handleTrustedNetworkChange handles a change of the trusted network status
+// handleTrustedNetworkChange handles a change of the trusted network status.
 func (a *Agent) handleTrustedNetworkChange() {
 	log.WithField("trustedNetwork", a.trustedNetwork).
 		Info("Trusted network status changed")
@@ -108,7 +109,7 @@ func (a *Agent) handleTrustedNetworkChange() {
 	a.dbus.SetProperty(dbusapi.PropertyTrustedNetwork, a.trustedNetwork)
 }
 
-// handleLoginStateChange handles a change of the login state
+// handleLoginStateChange handles a change of the login state.
 func (a *Agent) handleLoginStateChange() {
 	log.WithField("loginState", a.loginState).
 		Info("Login state changed")
@@ -134,14 +135,14 @@ func (a *Agent) handleLoginStateChange() {
 	a.dbus.SetProperty(dbusapi.PropertyLoginState, a.loginState)
 }
 
-// handleLastKeepAliveChange handles a change of the last keep-alive time
+// handleLastKeepAliveChange handles a change of the last keep-alive time.
 func (a *Agent) handleLastKeepAliveChange() {
 	log.WithField("lastKeepAlive", a.lastKeepAlive).
 		Info("Last keep-alive time changed")
 	a.dbus.SetProperty(dbusapi.PropertyLastKeepAliveAt, a.lastKeepAlive)
 }
 
-// setKerberosTGT sets the kerberos TGT times
+// setKerberosTGT sets the kerberos TGT times.
 func (a *Agent) setKerberosTGT(startTime, endTime int64) {
 	if startTime == a.kerberosTGT.StartTime &&
 		endTime == a.kerberosTGT.EndTime {
@@ -155,7 +156,7 @@ func (a *Agent) setKerberosTGT(startTime, endTime int64) {
 	a.handleKerberosTGTChange()
 }
 
-// setTrustedNetwork sets the trusted network status to "trusted" or "not trusted"
+// setTrustedNetwork sets the trusted network status to "trusted" or "not trusted".
 func (a *Agent) setTrustedNetwork(trusted bool) {
 	// convert bool to trusted network status
 	trustedNetwork := status.TrustedNetworkNotTrusted
@@ -174,7 +175,7 @@ func (a *Agent) setTrustedNetwork(trusted bool) {
 	a.handleTrustedNetworkChange()
 }
 
-// setLoginState sets the login state
+// setLoginState sets the login state.
 func (a *Agent) setLoginState(loginState status.LoginState) {
 	if loginState == a.loginState {
 		// state not changed
@@ -186,7 +187,7 @@ func (a *Agent) setLoginState(loginState status.LoginState) {
 	a.handleLoginStateChange()
 }
 
-// setLastKeepAlive sets LastKeepAlive
+// setLastKeepAlive sets LastKeepAlive.
 func (a *Agent) setLastKeepAlive(lastKeepAlive int64) {
 	if lastKeepAlive == a.lastKeepAlive {
 		// timestamp not changed
@@ -198,7 +199,7 @@ func (a *Agent) setLastKeepAlive(lastKeepAlive int64) {
 	a.handleLastKeepAliveChange()
 }
 
-// initTND initializes the trusted network detection from the config
+// initTND initializes the trusted network detection from the config.
 func (a *Agent) initTND() {
 	// add https servers
 	for _, s := range a.config.TND.HTTPSServers {
@@ -210,7 +211,7 @@ func (a *Agent) initTND() {
 	}
 }
 
-// startClient starts the client
+// startClient starts the client.
 func (a *Agent) startClient() {
 	// make sure client is not already running
 	if a.client != nil {
@@ -233,7 +234,7 @@ func (a *Agent) startClient() {
 	a.login = a.client.Results()
 }
 
-// stopClient stops the client
+// stopClient stops the client.
 func (a *Agent) stopClient() {
 	// make sure client is running
 	if a.client == nil {
@@ -248,7 +249,7 @@ func (a *Agent) stopClient() {
 	a.setLoginState(status.LoginStateLoggedOut)
 }
 
-// handleDBusRequest handles a D-Bus API request
+// handleDBusRequest handles a D-Bus API request.
 func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 	defer request.Close()
 
@@ -269,7 +270,7 @@ func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 	}
 }
 
-// start starts the agent's main loop
+// start starts the agent's main loop.
 func (a *Agent) start() {
 	defer close(a.closed)
 
@@ -434,19 +435,19 @@ func (a *Agent) start() {
 	}
 }
 
-// Start starts the agent
+// Start starts the agent.
 func (a *Agent) Start() {
 	go a.start()
 }
 
-// Stop stops the agent
+// Stop stops the agent.
 func (a *Agent) Stop() {
 	a.notifier.Close()
 	close(a.done)
 	<-a.closed
 }
 
-// NewAgent returns a new agent
+// NewAgent returns a new agent.
 func NewAgent(config *config.Config) *Agent {
 	dbus := dbusapi.NewService()
 	ccache := krbmon.NewCCacheMon()

@@ -9,7 +9,7 @@ import (
 	"github.com/godbus/dbus/v5/prop"
 )
 
-// TestRequestWaitClose tests Wait and Close of Request
+// TestRequestWaitClose tests Wait and Close of Request.
 func TestRequestWaitClose(_ *testing.T) {
 	// test closing
 	r := Request{
@@ -35,7 +35,7 @@ func TestRequestWaitClose(_ *testing.T) {
 	r.Wait()
 }
 
-// TestAgentReLogin tests ReLogin of agent
+// TestAgentReLogin tests ReLogin of agent.
 func TestAgentReLogin(t *testing.T) {
 	// create agent
 	requests := make(chan *Request)
@@ -72,7 +72,7 @@ func TestAgentReLogin(t *testing.T) {
 	}
 }
 
-// testConn implements the dbusConn interface for testing
+// testConn implements the dbusConn interface for testing.
 type testConn struct{}
 
 func (tc *testConn) Close() error {
@@ -87,7 +87,7 @@ func (tc *testConn) RequestName(string, dbus.RequestNameFlags) (dbus.RequestName
 	return dbus.RequestNameReplyPrimaryOwner, nil
 }
 
-// testProperties implements the propProperties interface for testing
+// testProperties implements the propProperties interface for testing.
 type testProperties struct {
 	props map[string]any
 }
@@ -106,7 +106,7 @@ func (tp *testProperties) SetMust(_, property string, v any) {
 	tp.props[property] = v
 }
 
-// TestServiceStartStop tests Start and Stop of Service
+// TestServiceStartStop tests Start and Stop of Service.
 func TestServiceStartStop(_ *testing.T) {
 	dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
 		return &testConn{}, nil
@@ -119,7 +119,7 @@ func TestServiceStartStop(_ *testing.T) {
 	s.Stop()
 }
 
-// TestServiceRequests tests Requests of Service
+// TestServiceRequests tests Requests of Service.
 func TestServiceRequests(t *testing.T) {
 	s := NewService()
 	want := s.requests
@@ -129,7 +129,7 @@ func TestServiceRequests(t *testing.T) {
 	}
 }
 
-// TestServiceSetProperty tests SetProperty of Service
+// TestServiceSetProperty tests SetProperty of Service.
 func TestServiceSetProperty(t *testing.T) {
 	dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
 		return &testConn{}, nil
@@ -153,7 +153,7 @@ func TestServiceSetProperty(t *testing.T) {
 	}
 }
 
-// TestNewService tests NewService
+// TestNewService tests NewService.
 func TestNewService(t *testing.T) {
 	s := NewService()
 	empty := &Service{}

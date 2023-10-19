@@ -1,3 +1,4 @@
+// Package cli contains the agent command line interface.
 package cli
 
 import (
@@ -13,17 +14,17 @@ import (
 )
 
 var (
-	// command is the command specified on the command line
+	// command is the command specified on the command line.
 	command = ""
 
-	// verbose specifies verbose output
+	// verbose specifies verbose output.
 	verbose = false
 
-	// json specifies whether output should be formatted as json
+	// json specifies whether output should be formatted as json.
 	json = false
 )
 
-// parseCommandLine parses the command line arguments
+// parseCommandLine parses the command line arguments.
 func parseCommandLine() {
 	// status subcommand
 	statusCmd := flag.NewFlagSet("status", flag.ExitOnError)
@@ -78,7 +79,7 @@ func parseCommandLine() {
 	}
 }
 
-// printStatus prints status
+// printStatus prints status.
 func printStatus(s *status.Status, verbose bool) {
 	fmt.Printf("Trusted Network:    %s\n", s.TrustedNetwork)
 	fmt.Printf("Login State:        %s\n", s.LoginState)
@@ -119,7 +120,7 @@ func printStatus(s *status.Status, verbose bool) {
 	}
 }
 
-// getStatus retrieves the agent status and prints it
+// getStatus retrieves the agent status and prints it.
 func getStatus() {
 	// create client
 	c, err := client.NewClient()
@@ -148,7 +149,7 @@ func getStatus() {
 	printStatus(s, verbose)
 }
 
-// relogin sends a relogin request to the agent
+// relogin sends a relogin request to the agent.
 func relogin() {
 	// create client
 	c, err := client.NewClient()
@@ -163,7 +164,7 @@ func relogin() {
 	}
 }
 
-// monitor subscribes to status updates from the agent and displays them
+// monitor subscribes to status updates from the agent and displays them.
 func monitor() {
 	// create client
 	c, err := client.NewClient()
@@ -183,7 +184,7 @@ func monitor() {
 	}
 }
 
-// Run is the main entry point
+// Run is the main entry point.
 func Run() {
 	parseCommandLine()
 

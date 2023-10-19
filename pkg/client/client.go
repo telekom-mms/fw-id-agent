@@ -1,3 +1,4 @@
+// Package client contains the FW-ID-Agent client.
 package client
 
 import (
@@ -10,7 +11,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
-// Client is an FW-ID-Agent client
+// Client is a FW-ID-Agent client.
 type Client interface {
 	Ping() error
 	Query() (*status.Status, error)
@@ -19,7 +20,7 @@ type Client interface {
 	Close() error
 }
 
-// DBusClient is an FW-ID-Agent client that uses the D-Bus API of FW-ID-Agent
+// DBusClient is a FW-ID-Agent client that uses the D-Bus API of FW-ID-Agent.
 type DBusClient struct {
 	mutex sync.Mutex
 
@@ -37,12 +38,12 @@ type DBusClient struct {
 	done chan struct{}
 }
 
-// dbusConnectSessionBus calls dbus.ConnectSystemBus
+// dbusConnectSessionBus calls dbus.ConnectSystemBus.
 var dbusConnectSessionBus = func() (*dbus.Conn, error) {
 	return dbus.ConnectSessionBus()
 }
 
-// updateStatusFromProperties updates status s from D-Bus properties in props
+// updateStatusFromProperties updates status s from D-Bus properties in props.
 func updateStatusFromProperties(s *status.Status, props map[string]dbus.Variant) error {
 	// create a temporary status, try to set all values in temporary
 	// status, if we received valid properties (no type conversion or JSON
@@ -86,18 +87,18 @@ func updateStatusFromProperties(s *status.Status, props map[string]dbus.Variant)
 	return nil
 }
 
-// ping calls the ping method to check if FW-ID-Agent is running
+// ping calls the ping method to check if FW-ID-Agent is running.
 var ping = func(d *DBusClient) error {
 	return d.conn.Object(dbusapi.Interface, dbusapi.Path).
 		Call("org.freedesktop.DBus.Peer.Ping", 0).Err
 }
 
-// Ping pings the FW-ID-Agent to check if it is running
+// Ping pings the FW-ID-Agent to check if it is running.
 func (d *DBusClient) Ping() error {
 	return ping(d)
 }
 
-// query retrieves the D-Bus properties from the agent
+// query retrieves the D-Bus properties from the agent.
 var query = func(d *DBusClient) (map[string]dbus.Variant, error) {
 	// get all properties
 	props := make(map[string]dbus.Variant)
@@ -111,7 +112,7 @@ var query = func(d *DBusClient) (map[string]dbus.Variant, error) {
 	return props, nil
 }
 
-// Query retrieves the status
+// Query retrieves the status.
 func (d *DBusClient) Query() (*status.Status, error) {
 	// get properties
 	props, err := query(d)
@@ -129,7 +130,7 @@ func (d *DBusClient) Query() (*status.Status, error) {
 	return status, nil
 }
 
-// handlePropertiesChanged handles a PropertiesChanged D-Bus signal
+// handlePropertiesChanged handles a PropertiesChanged D-Bus signal.
 func handlePropertiesChanged(s *dbus.Signal, stat *status.Status) *status.Status {
 	// make sure it's a properties changed signal
 	if s.Path != dbusapi.Path ||
@@ -179,7 +180,7 @@ func handlePropertiesChanged(s *dbus.Signal, stat *status.Status) *status.Status
 	return stat
 }
 
-// setSubscribed tries to set subscribed to true and returns true if successful
+// setSubscribed tries to set subscribed to true and returns true if successful.
 func (d *DBusClient) setSubscribed() bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -192,7 +193,7 @@ func (d *DBusClient) setSubscribed() bool {
 	return true
 }
 
-// isSubscribed returns whether subscribed is set
+// isSubscribed returns whether subscribed is set.
 func (d *DBusClient) isSubscribed() bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -202,7 +203,7 @@ func (d *DBusClient) isSubscribed() bool {
 
 // Subscribe subscribes to PropertiesChanged D-Bus signals, converts incoming
 // PropertiesChanged signals to status updates and sends those updates over the
-// returned channel
+// returned channel.
 func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 	// make sure this only runs once
 	if ok := d.setSubscribed(); !ok {
@@ -264,19 +265,19 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 	return d.updates, nil
 }
 
-// relogin sends a re-login request to the agent
+// relogin sends a re-login request to the agent.
 var relogin = func(d *DBusClient) error {
 	// call connect
 	return d.conn.Object(dbusapi.Interface, dbusapi.Path).
 		Call(dbusapi.MethodReLogin, 0).Store()
 }
 
-// ReLogin sends a re-login request to the agent
+// ReLogin sends a re-login request to the agent.
 func (d *DBusClient) ReLogin() error {
 	return relogin(d)
 }
 
-// Close closes the DBusClient
+// Close closes the DBusClient.
 func (d *DBusClient) Close() error {
 	var err error
 
@@ -294,7 +295,7 @@ func (d *DBusClient) Close() error {
 	return err
 }
 
-// NewDBusClient returns a new DBusClient
+// NewDBusClient returns a new DBusClient.
 func NewDBusClient() (*DBusClient, error) {
 	// connect to session bus
 	conn, err := dbusConnectSessionBus()
@@ -312,7 +313,7 @@ func NewDBusClient() (*DBusClient, error) {
 	return client, nil
 }
 
-// NewClient returns a new Client
+// NewClient returns a new Client.
 func NewClient() (Client, error) {
 	return NewDBusClient()
 }

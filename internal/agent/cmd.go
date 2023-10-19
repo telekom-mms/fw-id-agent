@@ -15,11 +15,11 @@ import (
 )
 
 var (
-	// Version is the agent version, to be set at compile time
+	// Version is the agent version, to be set at compile time.
 	Version = "unknown"
 )
 
-// command line argument names
+// command line argument names.
 const (
 	argConfig        = "config"
 	argVersion       = "version"
@@ -36,7 +36,7 @@ const (
 	argNotifications = "notifications"
 )
 
-// flagIsSet returns whether flag with name is set as command line argument
+// flagIsSet returns whether flag with name is set as command line argument.
 func flagIsSet(name string) bool {
 	isSet := false
 	flag.Visit(func(f *flag.Flag) {
@@ -47,7 +47,7 @@ func flagIsSet(name string) bool {
 	return isSet
 }
 
-// parseTNDServers parses the TND servers command line argument
+// parseTNDServers parses the TND servers command line argument.
 func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 	if servers == "" {
 		return nil, false
@@ -66,7 +66,7 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 	return list, true
 }
 
-// Run is the main entry point
+// Run is the main entry point.
 func Run() {
 	// parse command line arguments
 	defaults := config.Default()
