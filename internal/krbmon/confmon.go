@@ -45,7 +45,7 @@ func (c *ConfMon) isConfigFileEvent(event fsnotify.Event) bool {
 // handleConfigFileEvent handles a config file event.
 func (c *ConfMon) handleConfigFileEvent() {
 	// load config file
-	cfg, err := config.Load(krb5conf)
+	cfg, err := config.Load(c.confFile)
 	if err != nil {
 		log.WithError(err).
 			Error("Kerberos Config Monitor could not load config")
@@ -67,7 +67,7 @@ func (c *ConfMon) start() {
 	defer close(c.updates)
 
 	// get directory of ccache file
-	c.confDir = filepath.Dir(krb5conf)
+	c.confDir = filepath.Dir(c.confFile)
 	if c.confDir == "" {
 		log.Fatal("Kerberos Config Monitor could not get config dir")
 	}
@@ -142,7 +142,8 @@ func (c *ConfMon) Updates() chan *ConfUpdate {
 // NewConfMon returns a new krb5.conf monitor.
 func NewConfMon() *ConfMon {
 	return &ConfMon{
-		updates: make(chan *ConfUpdate),
-		done:    make(chan struct{}),
+		confFile: krb5conf,
+		updates:  make(chan *ConfUpdate),
+		done:     make(chan struct{}),
 	}
 }
