@@ -11,6 +11,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/jcmturner/gokrb5/v8/credentials"
+	"github.com/jcmturner/gokrb5/v8/iana/nametype"
 	"github.com/jcmturner/gokrb5/v8/types"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +23,7 @@ type CCacheUpdate struct {
 
 // GetTGT returns the TGT for realm in the ccache.
 func (u *CCacheUpdate) GetTGT(realm string) *credentials.Credential {
-	name := types.NewPrincipalName(2, "krbtgt/"+realm)
+	name := types.NewPrincipalName(nametype.KRB_NT_SRV_INST, "krbtgt/"+realm)
 	if tgt, ok := u.CCache.GetEntry(name); ok {
 		return tgt
 	}
