@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
+var (
 	// krb5conf is the file path of the krb5.conf file.
 	krb5conf = "/etc/krb5.conf"
 )
@@ -23,6 +23,7 @@ type ConfUpdate struct {
 type ConfMon struct {
 	confDir  string
 	confFile string
+	watcher  *fsnotify.Watcher
 	config   *config.Config
 	updates  chan *ConfUpdate
 	done     chan struct{}
@@ -43,7 +44,16 @@ func (c *ConfMon) isConfigFileEvent(event fsnotify.Event) bool {
 }
 
 // handleConfigFileEvent handles a config file event.
-func (c *ConfMon) handleConfigFileEvent() {
+func (c *ConfMon) handleConfigFileEvent(event fsnotify.Event) {
+	// check event
+	if !c.isConfigFileEvent(event) {
+		return
+	}
+	log.WithFields(log.Fields{
+		"name": event.Name,
+		"op":   event.Op,
+	}).Debug("Kerberos Config Monitor handling file event")
+
 	// load config file
 	cfg, err := config.Load(c.confFile)
 	if err != nil {
@@ -62,58 +72,39 @@ func (c *ConfMon) handleConfigFileEvent() {
 	c.sendUpdate(&ConfUpdate{Config: c.config})
 }
 
+// handleConfigFileError handles a config file error.
+func (c *ConfMon) handleConfigFileError(err error) {
+	log.WithError(err).Error("Kerberos Config Monitor watcher error event")
+}
+
 // start starts the config monitor.
 func (c *ConfMon) start() {
 	defer close(c.updates)
-
-	// get directory of ccache file
-	c.confDir = filepath.Dir(c.confFile)
-	if c.confDir == "" {
-		log.Fatal("Kerberos Config Monitor could not get config dir")
-	}
-
-	// create watcher
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.WithError(err).Fatal("Kerberos Config Monitor file watcher error")
-	}
 	defer func() {
-		if err := watcher.Close(); err != nil {
+		if err := watcherClose(c.watcher); err != nil {
 			log.WithError(err).Error("Kerberos Config Monitor file watcher close error")
 		}
 	}()
 
-	// add config folder to watcher
-	if err := watcher.Add(c.confDir); err != nil {
-		log.WithError(err).Debug("Kerberos Config Monitor add CCache error")
-		return
-	}
-
 	// handle initial config file
-	c.handleConfigFileEvent()
+	c.handleConfigFileEvent(fsnotify.Event{Name: c.confFile})
 
 	// watch config file
 	for {
 		select {
-		case event, ok := <-watcher.Events:
+		case event, ok := <-c.watcher.Events:
 			if !ok {
 				log.Error("Kerberos Config Monitor got unexpected close of events channel")
 				return
 			}
-			if c.isConfigFileEvent(event) {
-				log.WithFields(log.Fields{
-					"name": event.Name,
-					"op":   event.Op,
-				}).Debug("Kerberos Config Monitor handling file event")
-				c.handleConfigFileEvent()
-			}
+			c.handleConfigFileEvent(event)
 
-		case err, ok := <-watcher.Errors:
+		case err, ok := <-c.watcher.Errors:
 			if !ok {
 				log.Error("Kerberos Config Monitor got unexpected close of errors channel")
 				return
 			}
-			log.WithError(err).Error("Kerberos Config Monitor watcher error event")
+			c.handleConfigFileError(err)
 
 		case <-c.done:
 			return
@@ -122,8 +113,24 @@ func (c *ConfMon) start() {
 }
 
 // Start starts the config monitor.
-func (c *ConfMon) Start() {
+func (c *ConfMon) Start() error {
+	// create watcher
+	watcher, err := fsnotifyNewWatcher()
+	if err != nil {
+		log.WithError(err).Error("Kerberos Config Monitor file watcher error")
+		return err
+	}
+
+	// get config folder and add it to watcher
+	if err := watcherAdd(watcher, c.confDir); err != nil {
+		log.WithField("dir", c.confDir).WithError(err).Error("Kerberos Config Monitor add CCache error")
+		return err
+	}
+
+	c.watcher = watcher
 	go c.start()
+
+	return nil
 }
 
 // Stop stops the config monitor.
@@ -143,6 +150,7 @@ func (c *ConfMon) Updates() chan *ConfUpdate {
 func NewConfMon() *ConfMon {
 	return &ConfMon{
 		confFile: krb5conf,
+		confDir:  filepath.Dir(krb5conf),
 		updates:  make(chan *ConfUpdate),
 		done:     make(chan struct{}),
 	}
