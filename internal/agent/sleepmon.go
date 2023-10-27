@@ -15,8 +15,10 @@ const (
 
 // SleepMon is a suspend/hibernate monitor.
 type SleepMon struct {
-	events chan bool
-	done   chan struct{}
+	conn    *dbus.Conn
+	signals chan *dbus.Signal
+	events  chan bool
+	done    chan struct{}
 }
 
 // sendEvent sends sleep over the event channel.
@@ -55,34 +57,14 @@ func (s *SleepMon) handleSignal(signal *dbus.Signal) {
 // start starts the sleep monitor.
 func (s *SleepMon) start() {
 	defer close(s.events)
-
-	// connect to system bus
-	conn, err := dbus.ConnectSystemBus()
-	if err != nil {
-		log.WithError(err).Error("SleepMon could not connect to system bus")
-		return
-	}
 	defer func() {
-		_ = conn.Close()
+		_ = s.conn.Close()
 	}()
-
-	// subscribe to login signals
-	if err = conn.AddMatchSignal(
-		dbus.WithMatchObjectPath(path),
-		dbus.WithMatchInterface(iface),
-	); err != nil {
-		log.WithError(err).Error("SleepMon could not subscribe to login signals")
-		return
-	}
-
-	// create channel for signals
-	c := make(chan *dbus.Signal, 10)
-	conn.Signal(c)
 
 	// handle login signals
 	for {
 		select {
-		case sig, ok := <-c:
+		case sig, ok := <-s.signals:
 			if !ok {
 				log.Error("SleepMon got unexpected close of signals channel")
 				return
@@ -94,9 +76,40 @@ func (s *SleepMon) start() {
 	}
 }
 
+// dbusConnectSystemBus is dbus.ConnectSystemBus for testing.
+var dbusConnectSystemBus = dbus.ConnectSystemBus
+
+// connAddMatchSignal is conn.AddMatchSignal for testing.
+var connAddMatchSignal = func(conn *dbus.Conn, options ...dbus.MatchOption) error {
+	return conn.AddMatchSignal(options...)
+}
+
 // Start starts the sleep monitor.
-func (s *SleepMon) Start() {
+func (s *SleepMon) Start() error {
+	// connect to system bus
+	conn, err := dbusConnectSystemBus()
+	if err != nil {
+		log.WithError(err).Error("SleepMon could not connect to system bus")
+		return err
+	}
+	s.conn = conn
+
+	// subscribe to login signals
+	if err = connAddMatchSignal(
+		conn,
+		dbus.WithMatchObjectPath(path),
+		dbus.WithMatchInterface(iface),
+	); err != nil {
+		log.WithError(err).Error("SleepMon could not subscribe to login signals")
+		return err
+	}
+
+	// set channel for signals
+	conn.Signal(s.signals)
+
 	go s.start()
+
+	return nil
 }
 
 // Stop stops the sleep monitor.
@@ -115,7 +128,8 @@ func (s *SleepMon) Events() chan bool {
 // NewSleepMon returns a new sleep monitor.
 func NewSleepMon() *SleepMon {
 	return &SleepMon{
-		events: make(chan bool),
-		done:   make(chan struct{}),
+		signals: make(chan *dbus.Signal, 10),
+		events:  make(chan bool),
+		done:    make(chan struct{}),
 	}
 }

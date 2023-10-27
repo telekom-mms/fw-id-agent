@@ -37,9 +37,9 @@ const (
 )
 
 // flagIsSet returns whether flag with name is set as command line argument.
-func flagIsSet(name string) bool {
+func flagIsSet(flags *flag.FlagSet, name string) bool {
 	isSet := false
-	flag.Visit(func(f *flag.Flag) {
+	flags.Visit(func(f *flag.Flag) {
 		if name == f.Name {
 			isSet = true
 		}
@@ -66,103 +66,137 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 	return list, true
 }
 
-// Run is the main entry point.
-func Run() {
+// getConfig gets the config from the config file and command line arguments,
+// returns no config and no error for the version command line argument.
+func getConfig(args []string) (*config.Config, error) {
 	// parse command line arguments
+	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
 	defaults := config.Default()
-	cfgFile := flag.String(argConfig, "", "Set config `file`")
-	ver := flag.Bool(argVersion, false, "print version")
-	serviceURL := flag.String(argServiceURL, "", "Set service URL")
-	realm := flag.String(argRealm, "", "Set kerberos realm")
-	keepAlive := flag.Int(argKeepAlive, defaults.KeepAlive, "Set default client keep-alive in `minutes`")
-	loginTimeout := flag.Int(argLoginTimeout, defaults.LoginTimeout, "Set client login request timeout in `seconds`")
-	logoutTimeout := flag.Int(argLogoutTimeout, defaults.LogoutTimeout, "Set client logout request timeout in `seconds`")
-	retryTimer := flag.Int(argRetryTimer, defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
-	tndServers := flag.String(argTNDServers, "", "Set comma-separated `list` of TND server url:hash pairs")
-	verbose := flag.Bool(argVerbose, defaults.Verbose, "Set verbose output")
-	minUserID := flag.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
-	startDelay := flag.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
-	notifications := flag.Bool(argNotifications, defaults.Notifications, "Set desktop notifications")
-	flag.Parse()
+	cfgFile := flags.String(argConfig, "", "Set config `file`")
+	ver := flags.Bool(argVersion, false, "print version")
+	serviceURL := flags.String(argServiceURL, "", "Set service URL")
+	realm := flags.String(argRealm, "", "Set kerberos realm")
+	keepAlive := flags.Int(argKeepAlive, defaults.KeepAlive, "Set default client keep-alive in `minutes`")
+	loginTimeout := flags.Int(argLoginTimeout, defaults.LoginTimeout, "Set client login request timeout in `seconds`")
+	logoutTimeout := flags.Int(argLogoutTimeout, defaults.LogoutTimeout, "Set client logout request timeout in `seconds`")
+	retryTimer := flags.Int(argRetryTimer, defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
+	tndServers := flags.String(argTNDServers, "", "Set comma-separated `list` of TND server url:hash pairs")
+	verbose := flags.Bool(argVerbose, defaults.Verbose, "Set verbose output")
+	minUserID := flags.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
+	startDelay := flags.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
+	notifications := flags.Bool(argNotifications, defaults.Notifications, "Set desktop notifications")
+	_ = flags.Parse(args[1:])
 
 	// print version?
 	if *ver {
 		fmt.Println(Version)
-		os.Exit(0)
+		return nil, nil
 	}
 
 	// load config or try defaults
 	cfg := config.Default()
-	if flagIsSet(argConfig) {
+	if flagIsSet(flags, argConfig) {
 		c, err := config.Load(*cfgFile)
 		if err != nil {
-			log.WithError(err).Fatal("Agent could not load config")
+			return nil, fmt.Errorf("could not load config: %w", err)
 		}
 		cfg = c
 	}
 
 	// overwrite config settings with command line arguments
-	if flagIsSet(argServiceURL) {
+	if flagIsSet(flags, argServiceURL) {
 		cfg.ServiceURL = *serviceURL
 	}
-	if flagIsSet(argRealm) {
+	if flagIsSet(flags, argRealm) {
 		cfg.Realm = *realm
 	}
-	if flagIsSet(argKeepAlive) {
+	if flagIsSet(flags, argKeepAlive) {
 		cfg.KeepAlive = *keepAlive
 	}
-	if flagIsSet(argLoginTimeout) {
+	if flagIsSet(flags, argLoginTimeout) {
 		cfg.LoginTimeout = *loginTimeout
 	}
-	if flagIsSet(argLogoutTimeout) {
+	if flagIsSet(flags, argLogoutTimeout) {
 		cfg.LogoutTimeout = *logoutTimeout
 	}
-	if flagIsSet(argRetryTimer) {
+	if flagIsSet(flags, argRetryTimer) {
 		cfg.RetryTimer = *retryTimer
 	}
-	if flagIsSet(argTNDServers) {
+	if flagIsSet(flags, argTNDServers) {
 		servers, ok := parseTNDServers(*tndServers)
 		if !ok {
-			log.WithField(argTNDServers, *tndServers).Fatal("Agent could not parse TND servers")
+			return nil, fmt.Errorf("could not parse TND servers %#v", *tndServers)
 		}
 		cfg.TND.HTTPSServers = servers
 	}
-	if flagIsSet(argVerbose) {
+	if flagIsSet(flags, argVerbose) {
 		cfg.Verbose = *verbose
 	}
-	if flagIsSet(argMinUserID) {
+	if flagIsSet(flags, argMinUserID) {
 		cfg.MinUserID = *minUserID
 	}
-	if flagIsSet(argStartDelay) {
+	if flagIsSet(flags, argStartDelay) {
 		cfg.StartDelay = *startDelay
 	}
-	if flagIsSet(argNotifications) {
+	if flagIsSet(flags, argNotifications) {
 		cfg.Notifications = *notifications
 	}
 
 	// check if config is valid
 	if !cfg.Valid() {
-		log.Fatal("Agent could not get valid config from file or command line arguments")
+		return nil, fmt.Errorf("could not get valid config from file or command line arguments")
 	}
 
-	// set verbose output
+	return cfg, nil
+}
+
+// setVerbose sets verbose mode based on the configuration.
+func setVerbose(cfg *config.Config) {
 	if cfg.Verbose {
 		log.SetLevel(log.DebugLevel)
 	}
+}
+
+// userCurrent is user.Current for testing.
+var userCurrent = user.Current
+
+// checkUser checks if the current user is valid with respect to the configured
+// minimum user ID.
+func checkUser(cfg *config.Config) error {
+	osUser, err := userCurrent()
+	if err != nil {
+		return fmt.Errorf("could not get current user: %w", err)
+	}
+	uid, err := strconv.Atoi(osUser.Uid)
+	if err != nil {
+		return fmt.Errorf("invalid user id: %w", err)
+	}
+	if uid < cfg.MinUserID {
+		return fmt.Errorf("user id lower than minimum allowed user id")
+	}
+
+	return nil
+}
+
+// Run is the main entry point.
+func Run() {
+	// get config
+	cfg, err := getConfig(os.Args)
+	if err != nil {
+		log.WithError(err).Fatal("Agent could not get config")
+	}
+	if cfg == nil {
+		return
+	}
+
+	// set verbose output
+	setVerbose(cfg)
 
 	log.WithField("config", cfg).Debug("Agent starting with valid config")
 
 	// check user
-	osUser, err := user.Current()
-	if err != nil {
-		log.WithError(err).Fatal("Agent could not get current user")
-	}
-	uid, err := strconv.Atoi(osUser.Uid)
-	if err != nil {
-		log.WithError(err).Fatal("Agent started with invalid user id")
-	}
-	if uid < cfg.MinUserID {
-		log.Fatal("Agent started with user id lower than minimum allowed user id")
+	if err := checkUser(cfg); err != nil {
+		log.WithError(err).Fatal("Agent started with invalid user")
 	}
 
 	// give the user's desktop environment some time to start after login,
@@ -173,7 +207,9 @@ func Run() {
 	// start agent
 	log.Debug("Agent starting")
 	a := NewAgent(cfg)
-	a.Start()
+	if err := a.Start(); err != nil {
+		log.WithError(err).Fatal("Agent could not start")
+	}
 
 	// catch interrupt and clean up
 	c := make(chan os.Signal, 1)
