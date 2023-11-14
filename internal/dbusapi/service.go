@@ -130,6 +130,14 @@ type propertyUpdate struct {
 	value any
 }
 
+// DBusService is the D-Bus Service interface.
+type DBusService interface {
+	Start()
+	Stop()
+	Requests() chan *Request
+	SetProperty(name string, value any)
+}
+
 // Service is a D-Bus Service.
 type Service struct {
 	requests chan *Request
