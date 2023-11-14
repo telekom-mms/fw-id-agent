@@ -97,6 +97,15 @@ func (r *Request) Wait() {
 	}
 }
 
+// NewRequest returns a new Request.
+func NewRequest(name string, done chan struct{}) *Request {
+	return &Request{
+		Name: name,
+		wait: make(chan struct{}),
+		done: done,
+	}
+}
+
 // agent defines agent interface methods.
 type agent struct {
 	requests chan *Request
@@ -106,11 +115,8 @@ type agent struct {
 // ReLogin is the "ReLogin" method of the Agent D-Bus interface.
 func (a agent) ReLogin(sender dbus.Sender) *dbus.Error {
 	log.WithField("sender", sender).Debug("Received D-Bus ReLogin() call")
-	request := &Request{
-		Name: RequestReLogin,
-		wait: make(chan struct{}),
-		done: a.done,
-	}
+	request := NewRequest(RequestReLogin, a.done)
+
 	select {
 	case a.requests <- request:
 	case <-a.done:
