@@ -4,6 +4,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -25,19 +26,20 @@ var (
 )
 
 // parseCommandLine parses the command line arguments.
-func parseCommandLine() {
+func parseCommandLine(args []string) error {
 	// status subcommand
-	statusCmd := flag.NewFlagSet("status", flag.ExitOnError)
+	statusCmd := flag.NewFlagSet("status", flag.ContinueOnError)
 	statusCmd.BoolVar(&verbose, "verbose", verbose, "set verbose output")
 	statusCmd.BoolVar(&json, "json", json, "set json output")
 
 	// command line arguments
-	ver := flag.Bool("version", false, "print version")
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	ver := flags.Bool("version", false, "print version")
 
 	// usage output
-	flag.Usage = func() {
-		cmd := os.Args[0]
-		w := flag.CommandLine.Output()
+	flags.Usage = func() {
+		cmd := flags.Name()
+		w := flags.Output()
 		usage := func(f string, args ...any) {
 			_, err := fmt.Fprintf(w, f, args...)
 			if err != nil {
@@ -47,7 +49,7 @@ func parseCommandLine() {
 		usage("Usage:\n")
 		usage("  %s [options] [command]\n", cmd)
 		usage("\nOptions:\n")
-		flag.PrintDefaults()
+		flags.PrintDefaults()
 		usage("\nCommands:\n")
 		usage("  status\n")
 		usage("        show agent status\n")
@@ -58,57 +60,69 @@ func parseCommandLine() {
 	}
 
 	// parse command line arguments
-	flag.Parse()
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
 
 	// print version?
 	if *ver {
 		fmt.Println(agent.Version)
-		os.Exit(0)
+		// treat -version like -help
+		return flag.ErrHelp
 	}
 
 	// parse subcommands
-	command = flag.Arg(0)
+	command = flags.Arg(0)
 	switch command {
 	case "status":
-		_ = statusCmd.Parse(os.Args[2:])
+		if err := statusCmd.Parse(args[2:]); err != nil {
+			return err
+		}
 	case "monitor":
 	case "relogin":
 	default:
-		flag.Usage()
-		os.Exit(2)
+		flags.Usage()
+		return fmt.Errorf("unknown command")
 	}
+
+	return nil
 }
 
 // printStatus prints status.
-func printStatus(s *status.Status, verbose bool) {
-	fmt.Printf("Trusted Network:    %s\n", s.TrustedNetwork)
-	fmt.Printf("Login State:        %s\n", s.LoginState)
+func printStatus(out io.Writer, s *status.Status, verbose bool) {
+	printf := func(format string, a ...any) {
+		if _, err := fmt.Fprintf(out, format, a...); err != nil {
+			log.Fatal(err)
+		}
+	}
+	printf("Trusted Network:    %s\n", s.TrustedNetwork)
+	printf("Login State:        %s\n", s.LoginState)
 	if verbose {
 		// last keep-alive info
-		lastKeepAlive := time.Unix(s.LastKeepAlive, 0)
-		if lastKeepAlive.IsZero() {
-			fmt.Printf("Last Keep-Alive:    0\n")
+		if s.LastKeepAlive <= 0 {
+			printf("Last Keep-Alive:\n")
 		} else {
-			fmt.Printf("Last Keep-Alive:    %s\n", lastKeepAlive)
+			lastKeepAlive := time.Unix(s.LastKeepAlive, 0)
+			printf("Last Keep-Alive:    %s\n", lastKeepAlive)
 		}
 
 		// kerberos info
-		fmt.Printf("Kerberos TGT:\n")
+		printf("Kerberos TGT:\n")
 
 		// kerberos tgt start time
-		tgtStartTime := time.Unix(s.KerberosTGT.StartTime, 0)
-		if tgtStartTime.IsZero() {
-			fmt.Printf("- Start Time:       0\n")
+		if s.KerberosTGT.StartTime <= 0 {
+			printf("- Start Time:\n")
 		} else {
-			fmt.Printf("- Start Time:       %s\n", tgtStartTime)
+			tgtStartTime := time.Unix(s.KerberosTGT.StartTime, 0)
+			printf("- Start Time:       %s\n", tgtStartTime)
 		}
 
 		// kerberos tgt end time
-		tgtEndTime := time.Unix(s.KerberosTGT.EndTime, 0)
-		if tgtEndTime.IsZero() {
-			fmt.Printf("- End Time:         0\n")
+		if s.KerberosTGT.EndTime <= 0 {
+			printf("- End Time:\n")
 		} else {
-			fmt.Printf("- End Time:         %s\n", tgtEndTime)
+			tgtEndTime := time.Unix(s.KerberosTGT.EndTime, 0)
+			printf("- End Time:         %s\n", tgtEndTime)
 		}
 
 		// agent config
@@ -116,84 +130,87 @@ func printStatus(s *status.Status, verbose bool) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Config:             %s\n", config)
+		printf("Config:             %s\n", config)
 	}
 }
 
 // getStatus retrieves the agent status and prints it.
-func getStatus() {
-	// create client
-	c, err := client.NewClient()
-	if err != nil {
-		log.WithError(err).Fatal("could not create client")
-	}
-	defer func() { _ = c.Close() }()
-
+func getStatus(c client.Client) error {
 	// query status
 	s, err := c.Query()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("query failed: %w", err)
 	}
 
 	if json {
 		// print status as json
 		j, err := s.JSONIndent()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("error converting status to json: %w", err)
 		}
 		fmt.Println(string(j))
-		return
+		return nil
 	}
 
 	// print status
-	printStatus(s, verbose)
+	printStatus(os.Stdout, s, verbose)
+	return nil
 }
 
 // relogin sends a relogin request to the agent.
-func relogin() {
-	// create client
-	c, err := client.NewClient()
-	if err != nil {
-		log.WithError(err).Fatal("could not create client")
-	}
-	defer func() { _ = c.Close() }()
-
+func relogin(c client.Client) error {
 	// send request to agent
 	if err := c.ReLogin(); err != nil {
-		log.WithError(err).Error("re-login request failed")
+		return fmt.Errorf("re-login request failed: %w", err)
 	}
+	return nil
 }
 
 // monitor subscribes to status updates from the agent and displays them.
-func monitor() {
-	// create client
-	c, err := client.NewClient()
-	if err != nil {
-		log.WithError(err).Fatal("could not create client")
-	}
-	defer func() { _ = c.Close() }()
-
+func monitor(c client.Client) error {
 	// get status updates
 	updates, err := c.Subscribe()
 	if err != nil {
-		log.WithError(err).Fatal("error subscribing to status updates")
+		return fmt.Errorf("error subscribing to status updates: %w", err)
 	}
 	for u := range updates {
 		log.Println("Got status update:")
-		printStatus(u, true)
+		printStatus(os.Stdout, u, true)
 	}
+	return nil
+}
+
+func runCommand(c client.Client, command string) error {
+	switch command {
+	case "status":
+		return getStatus(c)
+	case "monitor":
+		return monitor(c)
+	case "relogin":
+		return relogin(c)
+	}
+	return nil
 }
 
 // Run is the main entry point.
 func Run() {
-	parseCommandLine()
+	// parse command line
+	if err := parseCommandLine(os.Args); err != nil {
+		if err != flag.ErrHelp {
+			log.Fatal(err)
+		}
+		return
+	}
 
-	switch command {
-	case "status":
-		getStatus()
-	case "monitor":
-		monitor()
-	case "relogin":
-		relogin()
+	// create client
+	c, err := client.NewClient()
+	if err != nil {
+		log.WithError(err).Fatal("could not create client")
+	}
+	defer func() { _ = c.Close() }()
+
+	// run commands
+	if err := runCommand(c, command); err != nil {
+		log.Fatal(err)
 	}
 }
