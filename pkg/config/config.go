@@ -135,12 +135,7 @@ func (c *Config) Valid() bool {
 
 // JSON returns Config as JSON.
 func (c *Config) JSON() ([]byte, error) {
-	b, err := json.Marshal(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return json.Marshal(c)
 }
 
 // Default returns a new config with default values.
