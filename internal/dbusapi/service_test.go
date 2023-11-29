@@ -1,6 +1,7 @@
 package dbusapi
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -69,6 +70,25 @@ func TestAgentReLogin(t *testing.T) {
 		got.done != want.done {
 		// not equal
 		t.Errorf("got %v, want %v", got, want)
+	}
+
+	// test with request error
+	go func() {
+		r := <-requests
+		r.Error = errors.New("test error")
+		got = r
+		r.Close()
+	}()
+	err = a.ReLogin("sender")
+	if err == nil {
+		t.Errorf("relogin should return error")
+	}
+
+	// test with stopped agent
+	close(done)
+	err = a.ReLogin("sender")
+	if err == nil {
+		t.Errorf("relogin should return error")
 	}
 }
 
