@@ -102,22 +102,12 @@ func (s *Status) Copy() *Status {
 
 // JSON returns the Status as JSON.
 func (s *Status) JSON() ([]byte, error) {
-	b, err := json.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return json.Marshal(s)
 }
 
 // JSONIndent returns the Status as indented JSON.
 func (s *Status) JSONIndent() ([]byte, error) {
-	b, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return json.MarshalIndent(s, "", "  ")
 }
 
 // NewFromJSON returns a new Status parsed from JSON in b.

@@ -11,6 +11,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/jcmturner/gokrb5/v8/credentials"
+	"github.com/jcmturner/gokrb5/v8/iana/nametype"
 	"github.com/jcmturner/gokrb5/v8/types"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +23,7 @@ type CCacheUpdate struct {
 
 // GetTGT returns the TGT for realm in the ccache.
 func (u *CCacheUpdate) GetTGT(realm string) *credentials.Credential {
-	name := types.NewPrincipalName(2, "krbtgt/"+realm)
+	name := types.NewPrincipalName(nametype.KRB_NT_SRV_INST, "krbtgt/"+realm)
 	if tgt, ok := u.CCache.GetEntry(name); ok {
 		return tgt
 	}
@@ -33,6 +34,7 @@ func (u *CCacheUpdate) GetTGT(realm string) *credentials.Credential {
 type CCacheMon struct {
 	cCacheDir  string
 	cCacheFile string
+	watcher    *fsnotify.Watcher
 	cCache     *credentials.CCache
 	updates    chan *CCacheUpdate
 	done       chan struct{}
@@ -47,10 +49,13 @@ func (c *CCacheMon) sendUpdate(update *CCacheUpdate) {
 	}
 }
 
+// userCurrent is user.Current for testing.
+var userCurrent = user.Current
+
 // createCredentialCacheEnvVar creates an expected environment variable value
 // for the credential cache based on the current user ID.
 func createCredentialCacheEnvVar() string {
-	osUser, err := user.Current()
+	osUser, err := userCurrent()
 	if err != nil {
 		log.WithError(err).
 			Error("Kerberos CCache Monitor could not create credential cache environment variable value")
@@ -59,8 +64,8 @@ func createCredentialCacheEnvVar() string {
 	return fmt.Sprintf("FILE:/tmp/krb5cc_%s", osUser.Uid)
 }
 
-// getCredentialsCacheFilename returns the ccache file name.
-func getCredentialCacheFilename() (string, error) {
+// getCredentialCacheFilename returns the ccache file name.
+var getCredentialCacheFilename = func() (string, error) {
 	envVar := os.Getenv("KRB5CCNAME")
 	if envVar == "" {
 		newEnv := createCredentialCacheEnvVar()
@@ -89,7 +94,16 @@ func (c *CCacheMon) isCCacheFileEvent(event fsnotify.Event) bool {
 }
 
 // handleCCacheFileEvent handles a ccache file event.
-func (c *CCacheMon) handleCCacheFileEvent() {
+func (c *CCacheMon) handleCCacheFileEvent(event fsnotify.Event) {
+	// check event
+	if !c.isCCacheFileEvent(event) {
+		return
+	}
+	log.WithFields(log.Fields{
+		"name": event.Name,
+		"op":   event.Op,
+	}).Debug("Kerberos CCache Monitor handling file event")
+
 	// read ccache file
 	b, err := os.ReadFile(c.cCacheFile)
 	if err != nil {
@@ -125,65 +139,39 @@ func (c *CCacheMon) handleCCacheFileEvent() {
 	c.sendUpdate(&CCacheUpdate{CCache: c.cCache})
 }
 
+// handleCCacheFileError handles a ccache file error.
+func (c *CCacheMon) handleCCacheFileError(err error) {
+	log.WithError(err).Error("Kerberos CCache Monitor watcher error event")
+}
+
 // start starts the ccache monitor.
 func (c *CCacheMon) start() {
 	defer close(c.updates)
-
-	// get ccache file
-	cCacheFile, err := getCredentialCacheFilename()
-	if err != nil {
-		log.WithError(err).Fatal("Kerberos CCache Monitor could not get CCache file")
-	}
-	c.cCacheFile = cCacheFile
-
-	// get directory of ccache file
-	c.cCacheDir = filepath.Dir(cCacheFile)
-	if c.cCacheDir == "" {
-		log.Fatal("Kerberos CCache Monitor could not get CCache dir")
-	}
-
-	// create watcher
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.WithError(err).Fatal("Kerberos CCache Monitor file watcher error")
-	}
 	defer func() {
-		if err := watcher.Close(); err != nil {
+		if err := watcherClose(c.watcher); err != nil {
 			log.WithError(err).Error("Kerberos CCache Monitor file watcher close error")
 		}
 	}()
 
-	// add ccache folder to watcher
-	if err := watcher.Add(c.cCacheDir); err != nil {
-		log.WithError(err).Debug("Kerberos CCache Monitor add CCache error")
-		return
-	}
-
 	// handle initial ccache file
-	c.handleCCacheFileEvent()
+	c.handleCCacheFileEvent(fsnotify.Event{Name: c.cCacheFile})
 
 	// watch ccache file
 	for {
 		select {
-		case event, ok := <-watcher.Events:
+		case event, ok := <-c.watcher.Events:
 			if !ok {
 				log.Error("Kerberos CCache Monitor got unexpected close of events channel")
 				return
 			}
-			if c.isCCacheFileEvent(event) {
-				log.WithFields(log.Fields{
-					"name": event.Name,
-					"op":   event.Op,
-				}).Debug("Kerberos CCache Monitor handling file event")
-				c.handleCCacheFileEvent()
-			}
+			c.handleCCacheFileEvent(event)
 
-		case err, ok := <-watcher.Errors:
+		case err, ok := <-c.watcher.Errors:
 			if !ok {
 				log.Error("Kerberos CCache Monitor got unexpected close of errors channel")
 				return
 			}
-			log.WithError(err).Error("Kerberos CCache Monitor watcher error event")
+			c.handleCCacheFileError(err)
 
 		case <-c.done:
 			return
@@ -192,8 +180,33 @@ func (c *CCacheMon) start() {
 }
 
 // Start starts the ccache monitor.
-func (c *CCacheMon) Start() {
+func (c *CCacheMon) Start() error {
+	// get ccache file
+	cCacheFile, err := getCredentialCacheFilename()
+	if err != nil {
+		log.WithError(err).Error("Kerberos CCache Monitor could not get CCache file")
+		return err
+	}
+	c.cCacheFile = cCacheFile
+
+	// create watcher
+	watcher, err := fsnotifyNewWatcher()
+	if err != nil {
+		log.WithError(err).Error("Kerberos CCache Monitor file watcher error")
+		return err
+	}
+
+	// get ccache folder and add it to watcher
+	c.cCacheDir = filepath.Dir(cCacheFile)
+	if err := watcherAdd(watcher, c.cCacheDir); err != nil {
+		log.WithField("dir", c.cCacheDir).WithError(err).Error("Kerberos CCache Monitor add CCache error")
+		return err
+	}
+
+	c.watcher = watcher
 	go c.start()
+
+	return nil
 }
 
 // Stop stops the ccache monitor.

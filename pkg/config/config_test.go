@@ -12,8 +12,14 @@ import (
 
 // TestConfigCopy tests Copy of Config.
 func TestConfigCopy(t *testing.T) {
+	// test nil
+	var want *Config
+	if want.Copy() != nil {
+		t.Errorf("copy of nil should be nil")
+	}
+
 	// test defaults
-	want := Default()
+	want = Default()
 	got := want.Copy()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
@@ -87,6 +93,15 @@ func TestConfigValid(t *testing.T) {
 		(*Config)(nil).Valid(),
 		(&Config{}).Valid(),
 		Default().Valid(),
+		(&Config{
+			ServiceURL: "example.com",
+			Realm:      "test",
+		}).Valid(),
+		(&Config{
+			ServiceURL: "example.com",
+			Realm:      "test",
+			TND:        TNDConfig{HTTPSServers: []TNDHTTPSConfig{{URL: "", Hash: ""}}},
+		}).Valid(),
 	} {
 		if got != want {
 			t.Errorf("got %t, want %t", got, want)
@@ -129,6 +144,12 @@ func TestDefault(t *testing.T) {
 
 // TestNewFromJSON tests NewFromJSON.
 func TestNewFromJSON(t *testing.T) {
+	// test invalid
+	if _, err := NewFromJSON([]byte("")); err == nil {
+		t.Errorf("invalid json should return error")
+	}
+
+	// test valid
 	want := Default()
 	b, err := want.JSON()
 	if err != nil {

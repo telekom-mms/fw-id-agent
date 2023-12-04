@@ -49,6 +49,14 @@ type LoginResponse struct {
 	KeepAlive int `json:"keep-alive"`
 }
 
+// httpNewRequest is http.NewRequest for testing.
+var httpNewRequest = http.NewRequest
+
+// clientDo is spnego client.Do for testing.
+var clientDo = func(client *spnego.Client, request *http.Request) (*http.Response, error) {
+	return client.Do(request)
+}
+
 func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *http.Response, err error) {
 	if c.GetCCache() == nil {
 		err = fmt.Errorf("%d: error creating %s request: kerberos CCache not set", TokenError, api)
@@ -61,7 +69,7 @@ func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *
 	}
 
 	serviceURL := c.config.ServiceURL + api
-	request, err := http.NewRequest("POST", serviceURL, nil)
+	request, err := httpNewRequest("POST", serviceURL, nil)
 	if err != nil {
 		err = fmt.Errorf("%d: error creating %s request: %w", TokenError, api, err)
 		return
@@ -84,7 +92,7 @@ func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *
 	}
 	client := spnego.NewClient(krbC, &httpClient, "")
 
-	response, err = client.Do(request)
+	response, err = clientDo(client, request)
 	if err != nil {
 		err = fmt.Errorf("%d: error calling %s request: %w", CommunicationError, api, err)
 		return

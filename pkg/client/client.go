@@ -38,10 +38,8 @@ type DBusClient struct {
 	done chan struct{}
 }
 
-// dbusConnectSessionBus calls dbus.ConnectSystemBus.
-var dbusConnectSessionBus = func() (*dbus.Conn, error) {
-	return dbus.ConnectSessionBus()
-}
+// dbusConnectSessionBus is dbus.ConnectSystemBus for testing.
+var dbusConnectSessionBus = dbus.ConnectSessionBus
 
 // updateStatusFromProperties updates status s from D-Bus properties in props.
 func updateStatusFromProperties(s *status.Status, props map[string]dbus.Variant) error {
@@ -201,6 +199,16 @@ func (d *DBusClient) isSubscribed() bool {
 	return d.subscribed
 }
 
+// dbusConnAddMatchSignal calls AddMatchSignal on dbus.Conn.
+var dbusConnAddMatchSignal = func(conn *dbus.Conn, options ...dbus.MatchOption) error {
+	return conn.AddMatchSignal(options...)
+}
+
+// dbusConnSignal calls Signal on dbus.Conn.
+var dbusConnSignal = func(conn *dbus.Conn, ch chan<- *dbus.Signal) {
+	conn.Signal(ch)
+}
+
 // Subscribe subscribes to PropertiesChanged D-Bus signals, converts incoming
 // PropertiesChanged signals to status updates and sends those updates over the
 // returned channel.
@@ -217,7 +225,8 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 	}
 
 	// subscribe to properties changed signals
-	if err := d.conn.AddMatchSignal(
+	if err := dbusConnAddMatchSignal(
+		d.conn,
 		dbus.WithMatchSender(dbusapi.Interface),
 		dbus.WithMatchInterface("org.freedesktop.DBus.Properties"),
 		dbus.WithMatchMember("PropertiesChanged"),
@@ -228,7 +237,7 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 
 	// handle signals
 	c := make(chan *dbus.Signal, 10)
-	d.conn.Signal(c)
+	dbusConnSignal(d.conn, c)
 
 	// handle properties
 	go func() {
@@ -267,7 +276,6 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 
 // relogin sends a re-login request to the agent.
 var relogin = func(d *DBusClient) error {
-	// call connect
 	return d.conn.Object(dbusapi.Interface, dbusapi.Path).
 		Call(dbusapi.MethodReLogin, 0).Store()
 }

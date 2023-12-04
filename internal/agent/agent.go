@@ -3,6 +3,7 @@ package agent
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,10 +19,11 @@ import (
 // Agent is the firewall identity Agent.
 type Agent struct {
 	config *config.Config
-	dbus   *dbusapi.Service
+	dbus   dbusapi.DBusService
 	ccache *krbmon.CCacheMon
 	krbcfg *krbmon.ConfMon
 	tnd    tnd.TND
+	sleep  *SleepMon
 	client *client.Client
 	login  chan status.LoginState
 	done   chan struct{}
@@ -249,6 +251,84 @@ func (a *Agent) stopClient() {
 	a.setLoginState(status.LoginStateLoggedOut)
 }
 
+func (a *Agent) handleTNDResult(r bool) {
+	// update trusted network status
+	a.setTrustedNetwork(r)
+
+	if a.trustedNetwork.Trusted() {
+		// switched to trusted network,
+		// start identity agent client
+		a.startClient()
+	} else {
+		// switched to untrusted network,
+		// stop identity agent client
+		a.stopClient()
+	}
+}
+
+func (a *Agent) handleLoginResult(r status.LoginState) {
+	// update login state
+	a.setLoginState(r)
+
+	// update last keep-alive
+	if r.LoggedIn() {
+		now := time.Now().Unix()
+		a.setLastKeepAlive(now)
+	}
+}
+
+func (a *Agent) handleCCacheUpdate(u *krbmon.CCacheUpdate) {
+	// handle update
+	tgt := u.GetTGT(a.config.Realm)
+	if tgt == nil {
+		return
+	}
+
+	// get start and end unix timestamps of tgt
+	startTime := tgt.StartTime.Unix()
+	endTime := tgt.EndTime.Unix()
+
+	// check if tgt changed
+	if a.kerberosTGT.TimesEqual(startTime, endTime) {
+		// tgt did not change
+		return
+	}
+
+	// tgt changed
+	// save start and end time
+	a.setKerberosTGT(startTime, endTime)
+
+	// save update
+	a.ccacheUp = u
+
+	// set ccache in existing client or check if we
+	// can start new client now
+	if a.client != nil {
+		a.client.SetCCache(u.CCache)
+	}
+	if a.trustedNetwork.Trusted() {
+		a.startClient()
+	}
+
+}
+
+func (a *Agent) handleKrbConfUpdate(u *krbmon.ConfUpdate) {
+	// config changed
+	log.Debug("Agent got updated kerberos config")
+
+	// save update
+	a.krbcfgUp = u
+
+	// set config in existing client or check if we can
+	// start a new client now
+	if a.client != nil {
+		a.client.SetKrb5Conf(u.Config)
+	}
+	if a.trustedNetwork.Trusted() {
+		a.startClient()
+	}
+}
+
 // handleDBusRequest handles a D-Bus API request.
 func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 	defer request.Close()
@@ -270,43 +350,26 @@ func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 	}
 }
 
+func (a *Agent) handleSleepEvent(sleep bool) {
+	// ignore wake-up event
+	if !sleep {
+		return
+	}
+
+	// reset trusted network status and stop client
+	log.Info("Agent got sleep event, resetting trusted network status and stopping client")
+	a.setTrustedNetwork(false)
+	a.stopClient()
+}
+
 // start starts the agent's main loop.
 func (a *Agent) start() {
 	defer close(a.closed)
-
-	// start dbus api
-	a.dbus.Start()
 	defer a.dbus.Stop()
-
-	// start ccache monitor
-	a.ccache.Start()
 	defer a.ccache.Stop()
-
-	// start kerberos config monitor
-	a.krbcfg.Start()
 	defer a.krbcfg.Stop()
-
-	// start trusted network detection
-	a.initTND()
-	a.tnd.Start()
 	defer a.tnd.Stop()
-
-	// start sleep monitor
-	sleepMon := NewSleepMon()
-	sleepMon.Start()
-	defer sleepMon.Stop()
-
-	// set trusted network status to "not trusted" and
-	// login state to "logged out"
-	a.setTrustedNetwork(false)
-	a.setLoginState(status.LoginStateLoggedOut)
-
-	// set config D-Bus property
-	b, err := a.config.JSON()
-	if err != nil {
-		log.WithError(err).Fatal("could not convert config to json")
-	}
-	a.dbus.SetProperty(dbusapi.PropertyConfig, string(b))
+	defer a.sleep.Stop()
 
 	// start main loop
 	for {
@@ -316,93 +379,28 @@ func (a *Agent) start() {
 				log.Debug("Agent TND results channel closed")
 				return
 			}
-
-			// update trusted network status
-			a.setTrustedNetwork(r)
-
-			if a.trustedNetwork.Trusted() {
-				// switched to trusted network,
-				// start identity agent client
-				a.startClient()
-			} else {
-				// switched to untrusted network,
-				// stop identity agent client
-				a.stopClient()
-			}
+			a.handleTNDResult(r)
 
 		case r, ok := <-a.login:
 			if !ok {
 				log.Debug("Agent client results channel closed")
 				return
 			}
-
-			// update login state
-			a.setLoginState(r)
-
-			// update last keep-alive
-			if r.LoggedIn() {
-				now := time.Now().Unix()
-				a.setLastKeepAlive(now)
-			}
+			a.handleLoginResult(r)
 
 		case u, ok := <-a.ccache.Updates():
 			if !ok {
 				log.Debug("Agent ccache updates channel closed")
 				return
 			}
-
-			// handle update
-			tgt := u.GetTGT(a.config.Realm)
-			if tgt == nil {
-				break
-			}
-
-			// get start and end unix timestamps of tgt
-			startTime := tgt.StartTime.Unix()
-			endTime := tgt.EndTime.Unix()
-
-			// check if tgt changed
-			if a.kerberosTGT.TimesEqual(startTime, endTime) {
-				// tgt did not change
-				break
-			}
-
-			// tgt changed
-			// save start and end time
-			a.setKerberosTGT(startTime, endTime)
-
-			// save update
-			a.ccacheUp = u
-
-			// set ccache in existing client or check if we
-			// can start new client now
-			if a.client != nil {
-				a.client.SetCCache(u.CCache)
-			}
-			if a.trustedNetwork.Trusted() {
-				a.startClient()
-			}
+			a.handleCCacheUpdate(u)
 
 		case u, ok := <-a.krbcfg.Updates():
 			if !ok {
 				log.Debug("Agent kerberos config updates channel closed")
 				return
 			}
-
-			// config changed
-			log.Debug("Agent got updated kerberos config")
-
-			// save update
-			a.krbcfgUp = u
-
-			// set config in existing client or check if we can
-			// start a new client now
-			if a.client != nil {
-				a.client.SetKrb5Conf(u.Config)
-			}
-			if a.trustedNetwork.Trusted() {
-				a.startClient()
-			}
+			a.handleKrbConfUpdate(u)
 
 		case r, ok := <-a.dbus.Requests():
 			if !ok {
@@ -411,21 +409,12 @@ func (a *Agent) start() {
 			}
 			a.handleDBusRequest(r)
 
-		case sleep, ok := <-sleepMon.Events():
+		case s, ok := <-a.sleep.Events():
 			if !ok {
 				log.Debug("Agent SleepMon events channel closed")
 				return
 			}
-
-			// ignore wake-up event
-			if !sleep {
-				break
-			}
-
-			// reset trusted network status and stop client
-			log.Info("Agent got sleep event, resetting trusted network status and stopping client")
-			a.setTrustedNetwork(false)
-			a.stopClient()
+			a.handleSleepEvent(s)
 
 		case <-a.done:
 			log.Debug("Agent stopping")
@@ -436,8 +425,43 @@ func (a *Agent) start() {
 }
 
 // Start starts the agent.
-func (a *Agent) Start() {
+func (a *Agent) Start() error {
+	// start dbus api
+	a.dbus.Start()
+
+	// start ccache monitor
+	if err := a.ccache.Start(); err != nil {
+		return fmt.Errorf("could not start ccache monitor: %w", err)
+	}
+
+	// start kerberos config monitor
+	if err := a.krbcfg.Start(); err != nil {
+		return fmt.Errorf("could not start krb5.conf monitor: %w", err)
+	}
+
+	// start trusted network detection
+	a.initTND()
+	a.tnd.Start()
+
+	// start sleep monitor
+	if err := a.sleep.Start(); err != nil {
+		return fmt.Errorf("could not start sleep monitor: %w", err)
+	}
+
+	// set trusted network status to "not trusted" and
+	// login state to "logged out"
+	a.setTrustedNetwork(false)
+	a.setLoginState(status.LoginStateLoggedOut)
+
+	// set config D-Bus property
+	b, err := a.config.JSON()
+	if err != nil {
+		return fmt.Errorf("could not convert config to json: %w", err)
+	}
+	a.dbus.SetProperty(dbusapi.PropertyConfig, string(b))
+
 	go a.start()
+	return nil
 }
 
 // Stop stops the agent.
@@ -453,13 +477,18 @@ func NewAgent(config *config.Config) *Agent {
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
 	tnd := tnd.NewDetector(tnd.NewConfig())
-	notifier := notify.NewNotifier()
+	sleep := NewSleepMon()
+	notifier, err := notify.NewNotifier()
+	if err != nil {
+		log.WithError(err).Error("Agent could not create notifier, no desktop notifications will be available")
+	}
 	return &Agent{
 		config:   config,
 		dbus:     dbus,
 		ccache:   ccache,
 		krbcfg:   krbcfg,
 		tnd:      tnd,
+		sleep:    sleep,
 		done:     make(chan struct{}),
 		closed:   make(chan struct{}),
 		notifier: notifier,
