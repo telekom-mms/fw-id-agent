@@ -13,6 +13,7 @@ import (
 	"github.com/telekom-mms/fw-id-agent/internal/krbmon"
 	"github.com/telekom-mms/fw-id-agent/pkg/config"
 	"github.com/telekom-mms/fw-id-agent/pkg/status"
+	"github.com/telekom-mms/tnd/pkg/tnd/tndtest"
 )
 
 // nopDBusService is a NOP D-Bus Service for testing.
@@ -144,20 +145,31 @@ func TestAgentSetLastKeepAlive(t *testing.T) {
 }
 
 // TestInitTND tests initTND of Agent.
-func TestInitTND(_ *testing.T) {
+func TestInitTND(t *testing.T) {
 	// create agent
 	c := &config.Config{}
 	a := NewAgent(c)
 
 	// no https servers
-	// TODO: add checks when TND has getters
 	a.initTND()
+	want := map[string]string{}
+	got := a.tnd.GetServers()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
 
 	// with https servers
+	url := "example.com"
+	hash := "abcdef1234567890"
 	a.config.TND.HTTPSServers = []config.TNDHTTPSConfig{
-		{URL: "example.com", Hash: "abcdef1234567890"},
+		{URL: url, Hash: hash},
 	}
 	a.initTND()
+	want = map[string]string{url: hash}
+	got = a.tnd.GetServers()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
 }
 
 // TestAgentStartStopClient tests startClient and stopClient of Agent.
@@ -361,6 +373,8 @@ func TestAgentHandleSleepEvent(t *testing.T) {
 func TestAgentStartStop(t *testing.T) {
 	c := &config.Config{}
 	a := NewAgent(c)
+	a.dbus = &nopDBusService{}
+	a.tnd = tndtest.NewDetector()
 	if err := a.Start(); err != nil {
 		t.Errorf("could not start agent: %v", err)
 	}
