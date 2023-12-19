@@ -204,13 +204,15 @@ func (a *Agent) setLastKeepAlive(lastKeepAlive int64) {
 // initTND initializes the trusted network detection from the config.
 func (a *Agent) initTND() {
 	// add https servers
+	servers := map[string]string{}
 	for _, s := range a.config.TND.HTTPSServers {
 		log.WithFields(log.Fields{
 			"url":  s.URL,
 			"hash": s.Hash,
 		}).Debug("Agent adding HTTPS server url and hash to TND")
-		a.tnd.AddServer(s.URL, s.Hash)
+		servers[s.URL] = s.Hash
 	}
+	a.tnd.SetServers(servers)
 }
 
 // startClient starts the client.
@@ -441,7 +443,9 @@ func (a *Agent) Start() error {
 
 	// start trusted network detection
 	a.initTND()
-	a.tnd.Start()
+	if err := a.tnd.Start(); err != nil {
+		return fmt.Errorf("could not start TND: %w", err)
+	}
 
 	// start sleep monitor
 	if err := a.sleep.Start(); err != nil {
