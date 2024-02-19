@@ -178,15 +178,14 @@ func checkUser(cfg *config.Config) error {
 	return nil
 }
 
-// Run is the main entry point.
-func Run() {
+func run(args []string) error {
 	// get config
-	cfg, err := getConfig(os.Args)
+	cfg, err := getConfig(args)
 	if err != nil {
-		log.WithError(err).Fatal("Agent could not get config")
+		return fmt.Errorf("Agent could not get config: %w", err)
 	}
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	// set verbose output
@@ -196,7 +195,7 @@ func Run() {
 
 	// check user
 	if err := checkUser(cfg); err != nil {
-		log.WithError(err).Fatal("Agent started with invalid user")
+		return fmt.Errorf("Agent started with invalid user: %w", err)
 	}
 
 	// give the user's desktop environment some time to start after login,
@@ -208,7 +207,7 @@ func Run() {
 	log.Debug("Agent starting")
 	a := NewAgent(cfg)
 	if err := a.Start(); err != nil {
-		log.WithError(err).Fatal("Agent could not start")
+		return fmt.Errorf("Agent could not start: %w", err)
 	}
 
 	// catch interrupt and clean up
@@ -216,4 +215,15 @@ func Run() {
 	signal.Notify(c, os.Interrupt)
 	<-c
 	a.Stop()
+	return nil
+}
+
+// Run is the main entry point.
+func Run() {
+	if err := run(os.Args); err != nil {
+		if err != flag.ErrHelp {
+			log.Fatal(err)
+		}
+		return
+	}
 }
