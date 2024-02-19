@@ -429,7 +429,9 @@ func (a *Agent) start() {
 // Start starts the agent.
 func (a *Agent) Start() error {
 	// start dbus api
-	a.dbus.Start()
+	if err := a.dbus.Start(); err != nil {
+		return fmt.Errorf("could not start dbus api: %w", err)
+	}
 
 	// start ccache monitor
 	if err := a.ccache.Start(); err != nil {

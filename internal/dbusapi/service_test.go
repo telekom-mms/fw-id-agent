@@ -127,7 +127,7 @@ func (tp *testProperties) SetMust(_, property string, v any) {
 }
 
 // TestServiceStartStop tests Start and Stop of Service.
-func TestServiceStartStop(_ *testing.T) {
+func TestServiceStartStop(t *testing.T) {
 	dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
 		return &testConn{}, nil
 	}
@@ -135,7 +135,9 @@ func TestServiceStartStop(_ *testing.T) {
 		return &testProperties{}, nil
 	}
 	s := NewService()
-	s.Start()
+	if err := s.Start(); err != nil {
+		t.Fatal(err)
+	}
 	s.Stop()
 }
 
@@ -159,7 +161,9 @@ func TestServiceSetProperty(t *testing.T) {
 		return properties, nil
 	}
 	s := NewService()
-	s.Start()
+	if err := s.Start(); err != nil {
+		t.Fatal(err)
+	}
 
 	propName := "test-property"
 	want := "test-value"

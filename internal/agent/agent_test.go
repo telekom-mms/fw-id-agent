@@ -19,7 +19,7 @@ import (
 // nopDBusService is a NOP D-Bus Service for testing.
 type nopDBusService struct{}
 
-func (n *nopDBusService) Start()                          {}
+func (n *nopDBusService) Start() error                    { return nil }
 func (n *nopDBusService) Stop()                           {}
 func (n *nopDBusService) Requests() chan *dbusapi.Request { return nil }
 func (n *nopDBusService) SetProperty(string, any)         {}
