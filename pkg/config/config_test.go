@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -175,7 +174,7 @@ func TestLoad(t *testing.T) {
 	// test empty config file
 	empty, err := os.CreateTemp("", "fw-id-agent-config-test")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	defer func() {
 		_ = os.Remove(empty.Name())
@@ -241,14 +240,14 @@ func TestLoad(t *testing.T) {
 
 		valid, err := os.CreateTemp("", "fw-id-agent-config-test")
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer func() {
 			_ = os.Remove(valid.Name())
 		}()
 
 		if _, err := valid.Write([]byte(content)); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 
 		cfg, _ := Load(valid.Name())
