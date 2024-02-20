@@ -209,13 +209,19 @@ func run(args []string) error {
 	if err := a.Start(); err != nil {
 		return fmt.Errorf("Agent could not start: %w", err)
 	}
+	defer a.Stop()
 
-	// catch interrupt and clean up
+	// catch interrupt signal
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	<-c
-	a.Stop()
-	return nil
+
+	// wait for interrupt signal or agent error
+	select {
+	case <-c:
+	case err = <-a.Errors():
+	}
+
+	return err
 }
 
 // Run is the main entry point.
