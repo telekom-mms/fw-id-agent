@@ -2,6 +2,7 @@ package agent
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -86,11 +87,27 @@ func TestGetConfig(t *testing.T) {
 		}
 	})
 
+	t.Run("invalid argument", func(t *testing.T) {
+		args := []string{"test", "-this-argument-does-not-exist"}
+		_, err := getConfig(args)
+		if err == nil {
+			t.Error("invalid argument should fail")
+		}
+	})
+
+	t.Run("help", func(t *testing.T) {
+		args := []string{"test", "-help"}
+		_, err := getConfig(args)
+		if err != flag.ErrHelp {
+			t.Errorf("help should return flag.ErrHelp: err %v", err)
+		}
+	})
+
 	t.Run("version", func(t *testing.T) {
 		args := []string{"test", fmt.Sprintf("--%s", argVersion)}
-		cfg, err := getConfig(args)
-		if cfg != nil || err != nil {
-			t.Errorf("version should not return config or error: cfg %v, err %v", cfg, err)
+		_, err := getConfig(args)
+		if err != flag.ErrHelp {
+			t.Errorf("version should return flag.ErrHelp: err %v", err)
 		}
 	})
 

@@ -66,11 +66,10 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 	return list, true
 }
 
-// getConfig gets the config from the config file and command line arguments,
-// returns no config and no error for the version command line argument.
+// getConfig gets the config from the config file and command line arguments.
 func getConfig(args []string) (*config.Config, error) {
 	// parse command line arguments
-	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	defaults := config.Default()
 	cfgFile := flags.String(argConfig, "", "Set config `file`")
 	ver := flags.Bool(argVersion, false, "print version")
@@ -85,12 +84,14 @@ func getConfig(args []string) (*config.Config, error) {
 	minUserID := flags.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
 	startDelay := flags.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
 	notifications := flags.Bool(argNotifications, defaults.Notifications, "Set desktop notifications")
-	_ = flags.Parse(args[1:])
+	if err := flags.Parse(args[1:]); err != nil {
+		return nil, err
+	}
 
 	// print version?
 	if *ver {
 		fmt.Println(Version)
-		return nil, nil
+		return nil, flag.ErrHelp
 	}
 
 	// load config or try defaults
@@ -182,10 +183,7 @@ func run(args []string) error {
 	// get config
 	cfg, err := getConfig(args)
 	if err != nil {
-		return fmt.Errorf("Agent could not get config: %w", err)
-	}
-	if cfg == nil {
-		return nil
+		return err
 	}
 
 	// set verbose output
