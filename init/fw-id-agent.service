@@ -6,6 +6,7 @@ After=dbus.service
 [Service]
 Type=dbus
 BusName=com.telekom_mms.fw_id_agent.Agent
+Restart=on-failure
 ExecStart=/usr/bin/fw-id-agent -config /etc/fw-id-agent.json
 KillSignal=SIGINT
 
