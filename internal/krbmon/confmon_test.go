@@ -49,20 +49,20 @@ func TestConfMonHandleConfigFileEvent(t *testing.T) {
 
 		// handle empty config file -> update
 		if err := os.WriteFile(c.confFile, []byte(""), 0666); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		c.handleConfigFileEvent(fsnotify.Event{Name: c.confFile})
 
 		// handle invalid config file -> no update
 		garbage := [512]byte{}
 		if err := os.WriteFile(c.confFile, garbage[:], 0666); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		c.handleConfigFileEvent(fsnotify.Event{Name: c.confFile})
 
 		// handle valid config file -> update
 		if err := os.WriteFile(c.confFile, []byte(testdata.KRB5_CONF), 0666); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		c.handleConfigFileEvent(fsnotify.Event{Name: c.confFile})
 
@@ -130,7 +130,7 @@ func TestConfMonStartStop(t *testing.T) {
 
 			// close watcher to trigger closing of channels and monitor exit
 			if err := watcher.Close(); err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 		}()
 

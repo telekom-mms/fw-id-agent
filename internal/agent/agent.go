@@ -26,6 +26,7 @@ type Agent struct {
 	sleep  *SleepMon
 	client *client.Client
 	login  chan status.LoginState
+	errors chan error
 	done   chan struct{}
 	closed chan struct{}
 
@@ -378,42 +379,42 @@ func (a *Agent) start() {
 		select {
 		case r, ok := <-a.tnd.Results():
 			if !ok {
-				log.Debug("Agent TND results channel closed")
+				a.errors <- errors.New("Agent TND results channel closed")
 				return
 			}
 			a.handleTNDResult(r)
 
 		case r, ok := <-a.login:
 			if !ok {
-				log.Debug("Agent client results channel closed")
+				a.errors <- errors.New("Agent client results channel closed")
 				return
 			}
 			a.handleLoginResult(r)
 
 		case u, ok := <-a.ccache.Updates():
 			if !ok {
-				log.Debug("Agent ccache updates channel closed")
+				a.errors <- errors.New("Agent ccache updates channel closed")
 				return
 			}
 			a.handleCCacheUpdate(u)
 
 		case u, ok := <-a.krbcfg.Updates():
 			if !ok {
-				log.Debug("Agent kerberos config updates channel closed")
+				a.errors <- errors.New("Agent kerberos config updates channel closed")
 				return
 			}
 			a.handleKrbConfUpdate(u)
 
 		case r, ok := <-a.dbus.Requests():
 			if !ok {
-				log.Debug("Agent dbus requests channel closed")
+				a.errors <- errors.New("Agent dbus requests channel closed")
 				return
 			}
 			a.handleDBusRequest(r)
 
 		case s, ok := <-a.sleep.Events():
 			if !ok {
-				log.Debug("Agent SleepMon events channel closed")
+				a.errors <- errors.New("Agent SleepMon events channel closed")
 				return
 			}
 			a.handleSleepEvent(s)
@@ -429,7 +430,9 @@ func (a *Agent) start() {
 // Start starts the agent.
 func (a *Agent) Start() error {
 	// start dbus api
-	a.dbus.Start()
+	if err := a.dbus.Start(); err != nil {
+		return fmt.Errorf("could not start dbus api: %w", err)
+	}
 
 	// start ccache monitor
 	if err := a.ccache.Start(); err != nil {
@@ -475,6 +478,11 @@ func (a *Agent) Stop() {
 	<-a.closed
 }
 
+// Errors returns the errors channel of the agent.
+func (a *Agent) Errors() chan error {
+	return a.errors
+}
+
 // NewAgent returns a new agent.
 func NewAgent(config *config.Config) *Agent {
 	dbus := dbusapi.NewService()
@@ -493,6 +501,7 @@ func NewAgent(config *config.Config) *Agent {
 		krbcfg:   krbcfg,
 		tnd:      tnd,
 		sleep:    sleep,
+		errors:   make(chan error, 1),
 		done:     make(chan struct{}),
 		closed:   make(chan struct{}),
 		notifier: notifier,

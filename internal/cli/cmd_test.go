@@ -56,7 +56,9 @@ func TestPrintStatus(t *testing.T) {
 	b := &bytes.Buffer{}
 
 	// not verbose
-	printStatus(b, s, false)
+	if err := printStatus(b, s, false); err != nil {
+		t.Error(err)
+	}
 
 	got := b.String()
 	want := `Trusted Network:    unknown
@@ -68,7 +70,9 @@ Login State:        unknown
 
 	// verbose, timestamps == 0
 	b.Reset()
-	printStatus(b, s, true)
+	if err := printStatus(b, s, true); err != nil {
+		t.Error(err)
+	}
 
 	got = b.String()
 	want = `Trusted Network:    unknown
@@ -89,7 +93,9 @@ Config:             null
 	s.KerberosTGT.EndTime = 2
 
 	b.Reset()
-	printStatus(b, s, true)
+	if err := printStatus(b, s, true); err != nil {
+		t.Error(err)
+	}
 
 	got = b.String()
 	want = fmt.Sprintf(`Trusted Network:    unknown

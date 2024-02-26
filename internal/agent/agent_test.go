@@ -19,7 +19,7 @@ import (
 // nopDBusService is a NOP D-Bus Service for testing.
 type nopDBusService struct{}
 
-func (n *nopDBusService) Start()                          {}
+func (n *nopDBusService) Start() error                    { return nil }
 func (n *nopDBusService) Stop()                           {}
 func (n *nopDBusService) Requests() chan *dbusapi.Request { return nil }
 func (n *nopDBusService) SetProperty(string, any)         {}
@@ -381,6 +381,16 @@ func TestAgentStartStop(t *testing.T) {
 	a.Stop()
 }
 
+// TestAgentErrors tests Errors of Agent.
+func TestAgentErrors(t *testing.T) {
+	c := &config.Config{}
+	a := NewAgent(c)
+
+	if a.Errors() == nil || a.Errors() != a.errors {
+		t.Errorf("invalid errors channel: %v", a.Errors())
+	}
+}
+
 // TestNewAgent tests NewAgent.
 func TestNewAgent(t *testing.T) {
 	c := &config.Config{}
@@ -392,6 +402,7 @@ func TestNewAgent(t *testing.T) {
 		a.krbcfg == nil ||
 		a.tnd == nil ||
 		a.sleep == nil ||
+		a.errors == nil ||
 		a.done == nil ||
 		a.closed == nil {
 

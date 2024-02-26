@@ -130,24 +130,24 @@ func TestCCacheHandleCCacheFileEvent(t *testing.T) {
 
 		// handle empty ccache file -> no update
 		if err := os.WriteFile(c.cCacheFile, []byte(""), 0666); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		c.handleCCacheFileEvent(fsnotify.Event{Name: c.cCacheFile})
 
 		// handle invalid ccache -> no update
 		garbage := [512]byte{}
 		if err := os.WriteFile(c.cCacheFile, garbage[:], 0666); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		c.handleCCacheFileEvent(fsnotify.Event{Name: c.cCacheFile})
 
 		// handle valid ccache -> update
 		b, err := hex.DecodeString(testdata.CCACHE_TEST)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		if err := os.WriteFile(c.cCacheFile, b, 0666); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		c.handleCCacheFileEvent(fsnotify.Event{Name: c.cCacheFile})
 
@@ -215,7 +215,7 @@ func TestCCacheMonStartStop(t *testing.T) {
 
 			// close watcher to trigger closing of channels and monitor exit
 			if err := watcher.Close(); err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 		}()
 

@@ -41,10 +41,7 @@ func parseCommandLine(args []string) error {
 		cmd := flags.Name()
 		w := flags.Output()
 		usage := func(f string, args ...any) {
-			_, err := fmt.Fprintf(w, f, args...)
-			if err != nil {
-				log.WithError(err).Fatal("CLI could not print usage")
-			}
+			_, _ = fmt.Fprintf(w, f, args...)
 		}
 		usage("Usage:\n")
 		usage("  %s [options] [command]\n", cmd)
@@ -89,11 +86,9 @@ func parseCommandLine(args []string) error {
 }
 
 // printStatus prints status.
-func printStatus(out io.Writer, s *status.Status, verbose bool) {
+func printStatus(out io.Writer, s *status.Status, verbose bool) error {
 	printf := func(format string, a ...any) {
-		if _, err := fmt.Fprintf(out, format, a...); err != nil {
-			log.Fatal(err)
-		}
+		_, _ = fmt.Fprintf(out, format, a...)
 	}
 	printf("Trusted Network:    %s\n", s.TrustedNetwork)
 	printf("Login State:        %s\n", s.LoginState)
@@ -128,10 +123,12 @@ func printStatus(out io.Writer, s *status.Status, verbose bool) {
 		// agent config
 		config, err := s.Config.JSON()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		printf("Config:             %s\n", config)
 	}
+
+	return nil
 }
 
 // getStatus retrieves the agent status and prints it.
@@ -153,8 +150,7 @@ func getStatus(c client.Client) error {
 	}
 
 	// print status
-	printStatus(os.Stdout, s, verbose)
-	return nil
+	return printStatus(os.Stdout, s, verbose)
 }
 
 // relogin sends a relogin request to the agent.
@@ -175,7 +171,9 @@ func monitor(c client.Client) error {
 	}
 	for u := range updates {
 		log.Println("Got status update:")
-		printStatus(os.Stdout, u, true)
+		if err := printStatus(os.Stdout, u, true); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -192,25 +190,29 @@ func runCommand(c client.Client, command string) error {
 	return nil
 }
 
-// Run is the main entry point.
-func Run() {
+func run(args []string) error {
 	// parse command line
-	if err := parseCommandLine(os.Args); err != nil {
-		if err != flag.ErrHelp {
-			log.Fatal(err)
-		}
-		return
+	if err := parseCommandLine(args); err != nil {
+		return err
 	}
 
 	// create client
 	c, err := client.NewClient()
 	if err != nil {
-		log.WithError(err).Fatal("could not create client")
+		return fmt.Errorf("could not create client: %w", err)
 	}
 	defer func() { _ = c.Close() }()
 
 	// run commands
-	if err := runCommand(c, command); err != nil {
-		log.Fatal(err)
+	return runCommand(c, command)
+}
+
+// Run is the main entry point.
+func Run() {
+	if err := run(os.Args); err != nil {
+		if err != flag.ErrHelp {
+			log.Fatal(err)
+		}
+		return
 	}
 }

@@ -1,7 +1,6 @@
 package status
 
 import (
-	"log"
 	"reflect"
 	"testing"
 
@@ -117,11 +116,11 @@ func TestJSON(t *testing.T) {
 	s := New()
 	b, err := s.JSON()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	n, err := NewFromJSON(b)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(n, s) {
 		t.Errorf("got %v, want %v", n, s)
@@ -133,11 +132,11 @@ func TestJSONIndent(t *testing.T) {
 	s := New()
 	b, err := s.JSONIndent()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	n, err := NewFromJSON(b)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(n, s) {
 		t.Errorf("got %v, want %v", n, s)
@@ -155,7 +154,7 @@ func TestNewFromJSON(t *testing.T) {
 	v := New()
 	b, err := v.JSON()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	if n, err := NewFromJSON(b); err != nil {
 		t.Error("valid JSON should not return error")

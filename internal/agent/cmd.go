@@ -66,11 +66,10 @@ func parseTNDServers(servers string) ([]config.TNDHTTPSConfig, bool) {
 	return list, true
 }
 
-// getConfig gets the config from the config file and command line arguments,
-// returns no config and no error for the version command line argument.
+// getConfig gets the config from the config file and command line arguments.
 func getConfig(args []string) (*config.Config, error) {
 	// parse command line arguments
-	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	defaults := config.Default()
 	cfgFile := flags.String(argConfig, "", "Set config `file`")
 	ver := flags.Bool(argVersion, false, "print version")
@@ -85,12 +84,14 @@ func getConfig(args []string) (*config.Config, error) {
 	minUserID := flags.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
 	startDelay := flags.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
 	notifications := flags.Bool(argNotifications, defaults.Notifications, "Set desktop notifications")
-	_ = flags.Parse(args[1:])
+	if err := flags.Parse(args[1:]); err != nil {
+		return nil, err
+	}
 
 	// print version?
 	if *ver {
 		fmt.Println(Version)
-		return nil, nil
+		return nil, flag.ErrHelp
 	}
 
 	// load config or try defaults
@@ -178,15 +179,11 @@ func checkUser(cfg *config.Config) error {
 	return nil
 }
 
-// Run is the main entry point.
-func Run() {
+func run(args []string) error {
 	// get config
-	cfg, err := getConfig(os.Args)
+	cfg, err := getConfig(args)
 	if err != nil {
-		log.WithError(err).Fatal("Agent could not get config")
-	}
-	if cfg == nil {
-		return
+		return err
 	}
 
 	// set verbose output
@@ -196,7 +193,7 @@ func Run() {
 
 	// check user
 	if err := checkUser(cfg); err != nil {
-		log.WithError(err).Fatal("Agent started with invalid user")
+		return fmt.Errorf("Agent started with invalid user: %w", err)
 	}
 
 	// give the user's desktop environment some time to start after login,
@@ -208,12 +205,29 @@ func Run() {
 	log.Debug("Agent starting")
 	a := NewAgent(cfg)
 	if err := a.Start(); err != nil {
-		log.WithError(err).Fatal("Agent could not start")
+		return fmt.Errorf("Agent could not start: %w", err)
 	}
+	defer a.Stop()
 
-	// catch interrupt and clean up
+	// catch interrupt signal
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	<-c
-	a.Stop()
+
+	// wait for interrupt signal or agent error
+	select {
+	case <-c:
+	case err = <-a.Errors():
+	}
+
+	return err
+}
+
+// Run is the main entry point.
+func Run() {
+	if err := run(os.Args); err != nil {
+		if err != flag.ErrHelp {
+			log.Fatal(err)
+		}
+		return
+	}
 }

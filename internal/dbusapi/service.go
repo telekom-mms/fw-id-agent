@@ -3,6 +3,7 @@ package dbusapi
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
@@ -138,7 +139,7 @@ type propertyUpdate struct {
 
 // DBusService is the D-Bus Service interface.
 type DBusService interface {
-	Start()
+	Start() error
 	Stop()
 	Requests() chan *Request
 	SetProperty(name string, value any)
@@ -146,6 +147,8 @@ type DBusService interface {
 
 // Service is a D-Bus Service.
 type Service struct {
+	conn     dbusConn
+	props    propProperties
 	requests chan *Request
 	propUps  chan *propertyUpdate
 	done     chan struct{}
@@ -178,28 +181,57 @@ var propExport = func(conn dbusConn, path dbus.ObjectPath, props prop.Map) (prop
 // start starts the service.
 func (s *Service) start() {
 	defer close(s.closed)
+	defer func() { _ = s.conn.Close() }()
 
+	// main loop
+	for {
+		select {
+		case u := <-s.propUps:
+			// update property
+			log.WithFields(log.Fields{
+				"name":  u.name,
+				"value": u.value,
+			}).Debug("D-Bus updating property")
+			s.props.SetMust(Interface, u.name, u.value)
+
+		case <-s.done:
+			log.Debug("D-Bus service stopping")
+			// set properties values to unknown/invalid to emit
+			// properties changed signal and inform clients
+			s.props.SetMust(Interface, PropertyConfig, ConfigInvalid)
+			s.props.SetMust(Interface, PropertyTrustedNetwork, TrustedNetworkUnknown)
+			s.props.SetMust(Interface, PropertyLoginState, LoginStateUnknown)
+			s.props.SetMust(Interface, PropertyLastKeepAliveAt, LastKeepAliveAtInvalid)
+			s.props.SetMust(Interface, PropertyKerberosTGTStartTime, KerberosTGTStartTimeInvalid)
+			s.props.SetMust(Interface, PropertyKerberosTGTEndTime, KerberosTGTEndTimeInvalid)
+			return
+		}
+	}
+}
+
+// Start starts the service.
+func (s *Service) Start() error {
 	// connect to session bus
 	conn, err := dbusConnectSessionBus()
 	if err != nil {
-		log.WithError(err).Fatal("Could not connect to D-Bus session bus")
+		return fmt.Errorf("could not connect to D-Bus session bus: %w", err)
 	}
-	defer func() { _ = conn.Close() }()
+	s.conn = conn
 
 	// request name
 	reply, err := conn.RequestName(Interface, dbus.NameFlagDoNotQueue)
 	if err != nil {
-		log.WithError(err).Fatal("Could not request D-Bus name")
+		return fmt.Errorf("could not request D-Bus name: %w", err)
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		log.Fatal("Requested D-Bus name is already taken")
+		return fmt.Errorf("requested D-Bus name is already taken")
 	}
 
 	// methods
 	meths := agent{s.requests, s.done}
 	err = conn.Export(meths, Path, Interface)
 	if err != nil {
-		log.WithError(err).Fatal("Could not export D-Bus methods")
+		return fmt.Errorf("could not export D-Bus methods: %w", err)
 	}
 
 	// properties
@@ -245,8 +277,9 @@ func (s *Service) start() {
 	}
 	props, err := propExport(conn, Path, propsSpec)
 	if err != nil {
-		log.WithError(err).Fatal("Could not export D-Bus properties spec")
+		return fmt.Errorf("could not export D-Bus properties spec: %w", err)
 	}
+	s.props = props
 
 	// introspection
 	n := &introspect.Node{
@@ -264,7 +297,7 @@ func (s *Service) start() {
 	err = conn.Export(introspect.NewIntrospectable(n), Path,
 		"org.freedesktop.DBus.Introspectable")
 	if err != nil {
-		log.WithError(err).Fatal("Could not export D-Bus introspection")
+		return fmt.Errorf("could not export D-Bus introspection: %w", err)
 	}
 
 	// set properties values to emit properties changed signal and make
@@ -276,35 +309,8 @@ func (s *Service) start() {
 	props.SetMust(Interface, PropertyKerberosTGTStartTime, KerberosTGTStartTimeInvalid)
 	props.SetMust(Interface, PropertyKerberosTGTEndTime, KerberosTGTEndTimeInvalid)
 
-	// main loop
-	for {
-		select {
-		case u := <-s.propUps:
-			// update property
-			log.WithFields(log.Fields{
-				"name":  u.name,
-				"value": u.value,
-			}).Debug("D-Bus updating property")
-			props.SetMust(Interface, u.name, u.value)
-
-		case <-s.done:
-			log.Debug("D-Bus service stopping")
-			// set properties values to unknown/invalid to emit
-			// properties changed signal and inform clients
-			props.SetMust(Interface, PropertyConfig, ConfigInvalid)
-			props.SetMust(Interface, PropertyTrustedNetwork, TrustedNetworkUnknown)
-			props.SetMust(Interface, PropertyLoginState, LoginStateUnknown)
-			props.SetMust(Interface, PropertyLastKeepAliveAt, LastKeepAliveAtInvalid)
-			props.SetMust(Interface, PropertyKerberosTGTStartTime, KerberosTGTStartTimeInvalid)
-			props.SetMust(Interface, PropertyKerberosTGTEndTime, KerberosTGTEndTimeInvalid)
-			return
-		}
-	}
-}
-
-// Start starts the service.
-func (s *Service) Start() {
 	go s.start()
+	return nil
 }
 
 // Stop stops the service.
