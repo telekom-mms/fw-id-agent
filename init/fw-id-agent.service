@@ -2,6 +2,7 @@
 Description=Firewall Identity Agent
 Requires=dbus.service
 After=dbus.service
+ConditionUser=!@system
 
 [Service]
 Type=dbus
