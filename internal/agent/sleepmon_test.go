@@ -119,7 +119,8 @@ func TestNewSleepMon(t *testing.T) {
 	if s == nil ||
 		s.signals == nil ||
 		s.events == nil ||
-		s.done == nil {
+		s.done == nil ||
+		s.closed == nil {
 
 		t.Errorf("got nil, want != nil")
 	}

@@ -19,6 +19,7 @@ type SleepMon struct {
 	signals chan *dbus.Signal
 	events  chan bool
 	done    chan struct{}
+	closed  chan struct{}
 }
 
 // sendEvent sends sleep over the event channel.
@@ -56,6 +57,7 @@ func (s *SleepMon) handleSignal(signal *dbus.Signal) {
 
 // start starts the sleep monitor.
 func (s *SleepMon) start() {
+	defer close(s.closed)
 	defer close(s.events)
 	defer func() {
 		_ = s.conn.Close()
@@ -115,9 +117,7 @@ func (s *SleepMon) Start() error {
 // Stop stops the sleep monitor.
 func (s *SleepMon) Stop() {
 	close(s.done)
-	for range s.events {
-		// wait for channel termination
-	}
+	<-s.closed
 }
 
 // Events returns the sleep event channel.
@@ -131,5 +131,6 @@ func NewSleepMon() *SleepMon {
 		signals: make(chan *dbus.Signal, 10),
 		events:  make(chan bool),
 		done:    make(chan struct{}),
+		closed:  make(chan struct{}),
 	}
 }
