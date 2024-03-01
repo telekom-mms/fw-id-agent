@@ -36,6 +36,9 @@ type DBusClient struct {
 
 	// done signals termination of the client
 	done chan struct{}
+
+	// closed signals termination of the client
+	closed chan struct{}
 }
 
 // dbusConnectSessionBus is dbus.ConnectSystemBus for testing.
@@ -241,6 +244,7 @@ func (d *DBusClient) Subscribe() (chan *status.Status, error) {
 
 	// handle properties
 	go func() {
+		defer close(d.closed)
 		defer close(d.updates)
 
 		// send initial status
@@ -295,9 +299,7 @@ func (d *DBusClient) Close() error {
 
 	if d.isSubscribed() {
 		close(d.done)
-		for range d.updates {
-			// wait for channel close
-		}
+		<-d.closed
 	}
 
 	return err
@@ -316,6 +318,7 @@ func NewDBusClient() (*DBusClient, error) {
 		conn:    conn,
 		updates: make(chan *status.Status),
 		done:    make(chan struct{}),
+		closed:  make(chan struct{}),
 	}
 
 	return client, nil

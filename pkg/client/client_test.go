@@ -361,8 +361,10 @@ func TestDBusClientClose(t *testing.T) {
 		subscribed: true,
 		updates:    make(chan *status.Status),
 		done:       make(chan struct{}),
+		closed:     make(chan struct{}),
 	}
 	close(client.updates)
+	close(client.closed)
 	if err := client.Close(); err != nil {
 		t.Error(err)
 	}
