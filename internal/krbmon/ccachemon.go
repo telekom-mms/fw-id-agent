@@ -38,6 +38,7 @@ type CCacheMon struct {
 	cCache     *credentials.CCache
 	updates    chan *CCacheUpdate
 	done       chan struct{}
+	closed     chan struct{}
 }
 
 // sendUpdate sends an update over the updates channel.
@@ -146,6 +147,7 @@ func (c *CCacheMon) handleCCacheFileError(err error) {
 
 // start starts the ccache monitor.
 func (c *CCacheMon) start() {
+	defer close(c.closed)
 	defer close(c.updates)
 	defer func() {
 		if err := watcherClose(c.watcher); err != nil {
@@ -212,9 +214,7 @@ func (c *CCacheMon) Start() error {
 // Stop stops the ccache monitor.
 func (c *CCacheMon) Stop() {
 	close(c.done)
-	for range c.updates {
-		// wait for channel shutdown
-	}
+	<-c.closed
 }
 
 // Updates returns the channel for ccache updates.
@@ -227,5 +227,6 @@ func NewCCacheMon() *CCacheMon {
 	return &CCacheMon{
 		updates: make(chan *CCacheUpdate),
 		done:    make(chan struct{}),
+		closed:  make(chan struct{}),
 	}
 }
