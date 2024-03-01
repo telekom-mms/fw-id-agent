@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"os/user"
-	"strconv"
 	"strings"
 	"time"
 
@@ -31,7 +29,6 @@ const (
 	argRetryTimer    = "retrytimer"
 	argTNDServers    = "tndservers"
 	argVerbose       = "verbose"
-	argMinUserID     = "minuserid"
 	argStartDelay    = "startdelay"
 	argNotifications = "notifications"
 )
@@ -81,7 +78,6 @@ func getConfig(args []string) (*config.Config, error) {
 	retryTimer := flags.Int(argRetryTimer, defaults.RetryTimer, "Set client login retry timer in case of errors in `seconds`")
 	tndServers := flags.String(argTNDServers, "", "Set comma-separated `list` of TND server url:hash pairs")
 	verbose := flags.Bool(argVerbose, defaults.Verbose, "Set verbose output")
-	minUserID := flags.Int(argMinUserID, defaults.MinUserID, "Set minimum allowed user `ID`")
 	startDelay := flags.Int(argStartDelay, defaults.StartDelay, "Set agent start delay in `seconds`")
 	notifications := flags.Bool(argNotifications, defaults.Notifications, "Set desktop notifications")
 	if err := flags.Parse(args[1:]); err != nil {
@@ -133,9 +129,6 @@ func getConfig(args []string) (*config.Config, error) {
 	if flagIsSet(flags, argVerbose) {
 		cfg.Verbose = *verbose
 	}
-	if flagIsSet(flags, argMinUserID) {
-		cfg.MinUserID = *minUserID
-	}
 	if flagIsSet(flags, argStartDelay) {
 		cfg.StartDelay = *startDelay
 	}
@@ -158,28 +151,6 @@ func setVerbose(cfg *config.Config) {
 	}
 }
 
-// userCurrent is user.Current for testing.
-var userCurrent = user.Current
-
-// checkUser checks if the current user is valid with respect to the configured
-// minimum user ID.
-func checkUser(cfg *config.Config) error {
-	osUser, err := userCurrent()
-	if err != nil {
-		return fmt.Errorf("could not get current user: %w", err)
-	}
-	uid, err := strconv.Atoi(osUser.Uid)
-	if err != nil {
-		return fmt.Errorf("invalid user id: %w", err)
-	}
-	if uid < cfg.MinUserID {
-		return fmt.Errorf("user id lower than minimum allowed user id")
-	}
-
-	return nil
-}
-
-// run is the main function.
 func run(args []string) error {
 	// get config
 	cfg, err := getConfig(args)
@@ -191,11 +162,6 @@ func run(args []string) error {
 	setVerbose(cfg)
 
 	log.WithField("config", cfg).Debug("Agent starting with valid config")
-
-	// check user
-	if err := checkUser(cfg); err != nil {
-		return fmt.Errorf("Agent started with invalid user: %w", err)
-	}
 
 	// give the user's desktop environment some time to start after login,
 	// so we do not miss notifications

@@ -73,8 +73,6 @@ type Config struct {
 	TND TNDConfig
 	// Verbose specifies whether the client should show verbose output.
 	Verbose bool
-	// MinUserID is the minimum allowed user ID.
-	MinUserID int
 	// StartDelay is the time the agent sleeps before starting in seconds.
 	StartDelay int
 	// Notifications specifies whether the agent should show desktop notifications.
@@ -126,7 +124,6 @@ func (c *Config) Valid() bool {
 		c.LogoutTimeout < 0 ||
 		c.RetryTimer < 0 ||
 		!c.TND.Valid() ||
-		c.MinUserID < 0 ||
 		c.StartDelay < 0 {
 		return false
 	}
@@ -146,7 +143,6 @@ func Default() *Config {
 		LogoutTimeout: 5,
 		RetryTimer:    15,
 		TND:           TNDConfig{Config: tnd.NewConfig()},
-		MinUserID:     1000,
 		StartDelay:    0,
 		Notifications: true,
 	}
