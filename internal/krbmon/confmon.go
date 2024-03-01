@@ -27,6 +27,7 @@ type ConfMon struct {
 	config   *config.Config
 	updates  chan *ConfUpdate
 	done     chan struct{}
+	closed   chan struct{}
 }
 
 // sendUpdate sends an update over the updates channel.
@@ -79,6 +80,7 @@ func (c *ConfMon) handleConfigFileError(err error) {
 
 // start starts the config monitor.
 func (c *ConfMon) start() {
+	defer close(c.closed)
 	defer close(c.updates)
 	defer func() {
 		if err := watcherClose(c.watcher); err != nil {
@@ -136,9 +138,7 @@ func (c *ConfMon) Start() error {
 // Stop stops the config monitor.
 func (c *ConfMon) Stop() {
 	close(c.done)
-	for range c.updates {
-		// wait for channel shutdown
-	}
+	<-c.closed
 }
 
 // Updates returns the channel for config updates.
@@ -153,5 +153,6 @@ func NewConfMon() *ConfMon {
 		confDir:  filepath.Dir(krb5conf),
 		updates:  make(chan *ConfUpdate),
 		done:     make(chan struct{}),
+		closed:   make(chan struct{}),
 	}
 }
