@@ -375,3 +375,20 @@ func TestClientSetGetKrb5Conf(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
+
+// TestNewClient tests NewClient.
+func TestNewClient(t *testing.T) {
+	config := config.Default()
+	ccache := getTestCCache(t)
+	krb5conf := krbConfig.New()
+	client := NewClient(config, ccache, krb5conf)
+	if client == nil ||
+		client.results == nil ||
+		client.done == nil ||
+		client.closed == nil ||
+		client.config != config ||
+		client.ccache != ccache ||
+		client.krb5conf != krb5conf {
+		t.Error("invalid client")
+	}
+}
