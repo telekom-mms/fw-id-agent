@@ -57,6 +57,7 @@ var clientDo = func(client *spnego.Client, request *http.Request) (*http.Respons
 	return client.Do(request)
 }
 
+// doServiceRequest runs a service request.
 func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *http.Response, err error) {
 	if c.GetCCache() == nil {
 		err = fmt.Errorf("%d: error creating %s request: kerberos CCache not set", TokenError, api)

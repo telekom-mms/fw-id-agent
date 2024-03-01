@@ -179,6 +179,7 @@ func checkUser(cfg *config.Config) error {
 	return nil
 }
 
+// run is the main function.
 func run(args []string) error {
 	// get config
 	cfg, err := getConfig(args)

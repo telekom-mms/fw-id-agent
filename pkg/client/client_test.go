@@ -336,7 +336,7 @@ func TestDBusClientReLogin(t *testing.T) {
 	}
 }
 
-// testRWC is a reader writer closer for testing
+// testRWC is a reader writer closer for testing.
 type testRWC struct{}
 
 func (t *testRWC) Read([]byte) (int, error)  { return 0, nil }
