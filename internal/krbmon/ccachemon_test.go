@@ -299,7 +299,7 @@ func TestCCacheMonUpdates(t *testing.T) {
 // TestNewCCacheMon tests NewCCacheMon.
 func TestNewCCacheMon(t *testing.T) {
 	c := NewCCacheMon()
-	if c == nil || c.updates == nil || c.done == nil {
+	if c == nil || c.updates == nil || c.done == nil || c.closed == nil {
 		t.Errorf("invalid ccachemon %v", c)
 	}
 }

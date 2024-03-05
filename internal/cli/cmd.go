@@ -178,6 +178,7 @@ func monitor(c client.Client) error {
 	return nil
 }
 
+// runCommand runs command.
 func runCommand(c client.Client, command string) error {
 	switch command {
 	case "status":
@@ -190,6 +191,7 @@ func runCommand(c client.Client, command string) error {
 	return nil
 }
 
+// run is the main function.
 func run(args []string) error {
 	// parse command line
 	if err := parseCommandLine(args); err != nil {

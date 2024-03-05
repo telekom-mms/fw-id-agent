@@ -34,7 +34,7 @@ func TestSleepMonHandleSignal(t *testing.T) {
 	}
 }
 
-// testRWC is a reader writer closer for testing
+// testRWC is a reader writer closer for testing.
 type testRWC struct{}
 
 func (t *testRWC) Read([]byte) (int, error)  { return 0, nil }
@@ -119,7 +119,8 @@ func TestNewSleepMon(t *testing.T) {
 	if s == nil ||
 		s.signals == nil ||
 		s.events == nil ||
-		s.done == nil {
+		s.done == nil ||
+		s.closed == nil {
 
 		t.Errorf("got nil, want != nil")
 	}

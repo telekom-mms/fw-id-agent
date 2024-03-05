@@ -254,6 +254,7 @@ func (a *Agent) stopClient() {
 	a.setLoginState(status.LoginStateLoggedOut)
 }
 
+// handleTNDResult handles a TND result.
 func (a *Agent) handleTNDResult(r bool) {
 	// update trusted network status
 	a.setTrustedNetwork(r)
@@ -269,6 +270,7 @@ func (a *Agent) handleTNDResult(r bool) {
 	}
 }
 
+// handleLoginResult handles a login result.
 func (a *Agent) handleLoginResult(r status.LoginState) {
 	// update login state
 	a.setLoginState(r)
@@ -280,6 +282,7 @@ func (a *Agent) handleLoginResult(r status.LoginState) {
 	}
 }
 
+// handleCCacheUpdate handles a CCache update.
 func (a *Agent) handleCCacheUpdate(u *krbmon.CCacheUpdate) {
 	// handle update
 	tgt := u.GetTGT(a.config.Realm)
@@ -315,6 +318,7 @@ func (a *Agent) handleCCacheUpdate(u *krbmon.CCacheUpdate) {
 
 }
 
+// handleKrbConfUpdate handes a Kerberos Config update.
 func (a *Agent) handleKrbConfUpdate(u *krbmon.ConfUpdate) {
 	// config changed
 	log.Debug("Agent got updated kerberos config")
@@ -353,6 +357,7 @@ func (a *Agent) handleDBusRequest(request *dbusapi.Request) {
 	}
 }
 
+// handleSleepEvent handles a sleep event.
 func (a *Agent) handleSleepEvent(sleep bool) {
 	// ignore wake-up event
 	if !sleep {

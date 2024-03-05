@@ -1,3 +1,6 @@
+/*
+Dbusclient is an example of a D-Bus client for the firewall identity agent.
+*/
 package main
 
 import (

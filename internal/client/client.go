@@ -25,6 +25,7 @@ type Client struct {
 	keepAlive time.Duration
 	results   chan status.LoginState
 	done      chan struct{}
+	closed    chan struct{}
 
 	// current kerberos ccache and config
 	// protected by mutex
@@ -49,6 +50,14 @@ type LoginResponse struct {
 	KeepAlive int `json:"keep-alive"`
 }
 
+// sendResult sends a result over the results channel.
+func (c *Client) sendResult(result status.LoginState) {
+	select {
+	case c.results <- result:
+	case <-c.done:
+	}
+}
+
 // httpNewRequest is http.NewRequest for testing.
 var httpNewRequest = http.NewRequest
 
@@ -57,6 +66,7 @@ var clientDo = func(client *spnego.Client, request *http.Request) (*http.Respons
 	return client.Do(request)
 }
 
+// doServiceRequest runs a service request.
 func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *http.Response, err error) {
 	if c.GetCCache() == nil {
 		err = fmt.Errorf("%d: error creating %s request: kerberos CCache not set", TokenError, api)
@@ -112,7 +122,7 @@ func (c *Client) doServiceRequest(api string, timeout time.Duration) (response *
 // login sends a login request to the identity service.
 func (c *Client) login() (err error) {
 	// signal "logging in" state
-	c.results <- status.LoginStateLoggingIn
+	c.sendResult(status.LoginStateLoggingIn)
 
 	// send login request
 	response, err := c.doServiceRequest("/login", c.config.GetLoginTimeout())
@@ -126,7 +136,7 @@ func (c *Client) login() (err error) {
 		}()
 	}
 	if err != nil || response.StatusCode != 200 {
-		c.results <- status.LoginStateLoggedOut
+		c.sendResult(status.LoginStateLoggedOut)
 		return
 	}
 
@@ -135,7 +145,7 @@ func (c *Client) login() (err error) {
 	body, err = io.ReadAll(response.Body)
 	if err != nil {
 		err = fmt.Errorf("%d: error reading login response body: %w", BackendError, err)
-		c.results <- status.LoginStateLoggedOut
+		c.sendResult(status.LoginStateLoggedOut)
 		return
 	}
 
@@ -145,7 +155,7 @@ func (c *Client) login() (err error) {
 	if err != nil {
 		// assume login successful but response has no parseable result
 		log.WithError(err).Error("Agent could not parse login response")
-		c.results <- status.LoginStateLoggedIn
+		c.sendResult(status.LoginStateLoggedIn)
 		return
 	}
 
@@ -161,25 +171,26 @@ func (c *Client) login() (err error) {
 	}
 
 	// signal "logged in" state
-	c.results <- status.LoginStateLoggedIn
+	c.sendResult(status.LoginStateLoggedIn)
 	return
 }
 
 // logout sends a logout request to the identity service.
 func (c *Client) logout() (err error) {
 	// signal "logging out" state
-	c.results <- status.LoginStateLoggingOut
+	c.sendResult(status.LoginStateLoggingOut)
 
 	// send logout request
 	_, err = c.doServiceRequest("/logout", c.config.GetLogoutTimeout())
 
 	// signal "logged out" state
-	c.results <- status.LoginStateLoggedOut
+	c.sendResult(status.LoginStateLoggedOut)
 	return
 }
 
 // start starts executing the client.
 func (c *Client) start() {
+	defer close(c.closed)
 	defer close(c.results)
 
 	timer := time.NewTimer(0)
@@ -221,9 +232,7 @@ func (c *Client) Start() {
 // Stop stops the client.
 func (c *Client) Stop() {
 	close(c.done)
-	for range c.results {
-		// wait for result channel close
-	}
+	<-c.closed
 }
 
 // Results returns the result channel.
@@ -268,6 +277,7 @@ func NewClient(config *config.Config, ccache *credentials.CCache, krb5conf *krbC
 	return &Client{
 		results:   make(chan status.LoginState),
 		done:      make(chan struct{}),
+		closed:    make(chan struct{}),
 		keepAlive: config.GetKeepAlive(),
 		config:    config,
 		ccache:    ccache,

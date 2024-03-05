@@ -207,7 +207,8 @@ func TestNewConfMon(t *testing.T) {
 		c.confFile == "" ||
 		c.confDir == "" ||
 		c.updates == nil ||
-		c.done == nil {
+		c.done == nil ||
+		c.closed == nil {
 
 		t.Error("invalid ConfMon")
 	}
