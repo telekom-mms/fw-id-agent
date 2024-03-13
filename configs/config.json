@@ -24,7 +24,6 @@
 		}
 	},
 	"Verbose": true,
-	"MinUserID": 1000,
 	"StartDelay": 0,
 	"Notifications": true
 }

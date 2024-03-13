@@ -131,7 +131,6 @@ func TestDefault(t *testing.T) {
 		LogoutTimeout: 5,
 		RetryTimer:    15,
 		TND:           TNDConfig{Config: tnd.NewConfig()},
-		MinUserID:     1000,
 		StartDelay:    0,
 		Notifications: true,
 	}
@@ -215,7 +214,6 @@ func TestLoad(t *testing.T) {
 		}
         },
 	"Verbose": true,
-	"MinUserID": 1000,
 	"StartDelay": 0,
 	"Notifications": true
 }`,
@@ -277,7 +275,6 @@ func TestLoad(t *testing.T) {
 				tnd.NewConfig(),
 			},
 			Verbose:       true,
-			MinUserID:     1000,
 			StartDelay:    0,
 			Notifications: true,
 		}

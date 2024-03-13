@@ -1,12 +1,9 @@
 package agent
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"math"
 	"os"
-	"os/user"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -144,7 +141,6 @@ func TestGetConfig(t *testing.T) {
 			fmt.Sprintf("--%s=1", argRetryTimer),
 			fmt.Sprintf("--%s=example:abcdef", argTNDServers),
 			fmt.Sprintf("--%s=false", argVerbose),
-			fmt.Sprintf("--%s=1000", argMinUserID),
 			fmt.Sprintf("--%s=0", argStartDelay),
 			fmt.Sprintf("--%s=false", argNotifications),
 		}
@@ -171,52 +167,4 @@ func TestSetVerbose(t *testing.T) {
 	if log.GetLevel() != log.DebugLevel {
 		t.Error("log level should be debug")
 	}
-}
-
-// TestCheckUser tests checkUser.
-func TestCheckUser(t *testing.T) {
-	// test invalid user, error getting user ID
-	t.Run("error getting user", func(t *testing.T) {
-		defer func() { userCurrent = user.Current }()
-		userCurrent = func() (*user.User, error) {
-			return nil, errors.New("test error")
-		}
-
-		cfg := config.Default()
-		if err := checkUser(cfg); err == nil {
-			t.Error("should be unable to get user ID")
-		}
-	})
-
-	// test invalid user, user ID invalid
-	t.Run("invalid user ID", func(t *testing.T) {
-		defer func() { userCurrent = user.Current }()
-		userCurrent = func() (*user.User, error) {
-			return &user.User{Uid: "invalid"}, nil
-		}
-
-		cfg := config.Default()
-		if err := checkUser(cfg); err == nil {
-			t.Error("should be unable to convert invalid user ID")
-		}
-	})
-
-	// test invalid user, user ID too low
-	t.Run("low user ID", func(t *testing.T) {
-		cfg := config.Default()
-		cfg.MinUserID = math.MaxUint32
-		if err := checkUser(cfg); err == nil {
-			t.Error("user ID should be invalid")
-		}
-	})
-
-	// test valid user
-	t.Run("valid", func(t *testing.T) {
-		cfg := config.Default()
-		cfg.MinUserID = 0
-
-		if err := checkUser(cfg); err != nil {
-			t.Errorf("user should be valid: %v", err)
-		}
-	})
 }
