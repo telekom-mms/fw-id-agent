@@ -26,7 +26,6 @@ builds:
       - -s -w -X github.com/telekom-mms/fw-id-agent/internal/agent.Version={{.Version}}-{{.Commit}}
 archives:
   - format: tar.gz
-    rlcp: true
     wrap_in_directory: true
     files:
       - src: init/fw-id-agent.service
@@ -90,7 +89,7 @@ nfpms:
         file_info:
           mode: 0644
       - src: configs/config.json
-        dst: /usr/share/fw-id-agent/
+        dst: /usr/share/doc/fw-id-agent/examples/
         file_info:
           mode: 0644
       - src: copyright

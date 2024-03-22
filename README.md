@@ -17,7 +17,7 @@ Download the package from releases page and use the following instructions to in
 
 ```console
 $ sudo apt install ./fw-id-agent.deb
-$ sudo cp /usr/share/fw-id-agent/config.json /etc/fw-id-agent.json # and adjust config parameters
+$ sudo cp /usr/share/doc/fw-id-agent/examples/config.json /etc/fw-id-agent.json # and adjust config parameters
 $ sudo systemctl --user start fw-id-agent.service
 ```
 
