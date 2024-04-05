@@ -128,10 +128,10 @@ func (tp *testProperties) SetMust(_, property string, v any) {
 
 // TestServiceStartStop tests Start and Stop of Service.
 func TestServiceStartStop(t *testing.T) {
-	dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
+	dbusConnectSessionBus = func(...dbus.ConnOption) (dbusConn, error) {
 		return &testConn{}, nil
 	}
-	propExport = func(conn dbusConn, path dbus.ObjectPath, props prop.Map) (propProperties, error) {
+	propExport = func(dbusConn, dbus.ObjectPath, prop.Map) (propProperties, error) {
 		return &testProperties{}, nil
 	}
 	s := NewService()
@@ -153,11 +153,11 @@ func TestServiceRequests(t *testing.T) {
 
 // TestServiceSetProperty tests SetProperty of Service.
 func TestServiceSetProperty(t *testing.T) {
-	dbusConnectSessionBus = func(opts ...dbus.ConnOption) (dbusConn, error) {
+	dbusConnectSessionBus = func(...dbus.ConnOption) (dbusConn, error) {
 		return &testConn{}, nil
 	}
 	properties := &testProperties{props: make(map[string]any)}
-	propExport = func(conn dbusConn, path dbus.ObjectPath, props prop.Map) (propProperties, error) {
+	propExport = func(dbusConn, dbus.ObjectPath, prop.Map) (propProperties, error) {
 		return properties, nil
 	}
 	s := NewService()

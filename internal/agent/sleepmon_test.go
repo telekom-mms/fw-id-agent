@@ -72,7 +72,7 @@ func TestSleepMonStartSignalsChan(t *testing.T) {
 func TestSleepMonStartError(t *testing.T) {
 	// match signal error
 	oldAddMatchSignal := connAddMatchSignal
-	connAddMatchSignal = func(conn *dbus.Conn, options ...dbus.MatchOption) error {
+	connAddMatchSignal = func(*dbus.Conn, ...dbus.MatchOption) error {
 		return errors.New("test error")
 	}
 	defer func() { connAddMatchSignal = oldAddMatchSignal }()
@@ -83,7 +83,7 @@ func TestSleepMonStartError(t *testing.T) {
 	}
 
 	// systembus error
-	dbusConnectSystemBus = func(ops ...dbus.ConnOption) (*dbus.Conn, error) {
+	dbusConnectSystemBus = func(...dbus.ConnOption) (*dbus.Conn, error) {
 		return nil, errors.New("test error")
 	}
 	defer func() { dbusConnectSystemBus = dbus.ConnectSystemBus }()
