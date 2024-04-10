@@ -148,7 +148,7 @@ func TestConfMonStartStop(t *testing.T) {
 	t.Run("start with errors", func(t *testing.T) {
 		// test with Watcher.Add() error
 		oldWatcherAdd := watcherAdd
-		watcherAdd = func(watcher *fsnotify.Watcher, name string) error {
+		watcherAdd = func(*fsnotify.Watcher, string) error {
 			return errors.New("test error")
 		}
 		defer func() { watcherAdd = oldWatcherAdd }()

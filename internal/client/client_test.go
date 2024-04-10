@@ -21,7 +21,7 @@ import (
 
 // initTestServer initializes a test server.
 func initTestServer(expected string) *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(expected))
@@ -91,7 +91,7 @@ func TestClientDoServiceRequestErrors(t *testing.T) {
 
 	t.Run("error response", func(t *testing.T) {
 		old := clientDo
-		clientDo = func(client *spnego.Client, request *http.Request) (*http.Response, error) {
+		clientDo = func(*spnego.Client, *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 300,
 				Body:       io.NopCloser(iotest.ErrReader(errors.New("test error"))),
@@ -204,7 +204,7 @@ func TestClientLoginFailed(t *testing.T) {
 		{StatusCode: 404, Body: io.NopCloser(&bytes.Buffer{})},
 		{StatusCode: 200, Body: io.NopCloser(iotest.ErrReader(errors.New("test error")))},
 	} {
-		clientDo = func(client *spnego.Client, request *http.Request) (*http.Response, error) {
+		clientDo = func(*spnego.Client, *http.Request) (*http.Response, error) {
 
 			return response, nil
 		}
@@ -280,7 +280,7 @@ func TestClientLogout(t *testing.T) {
 func TestClientStartStop(t *testing.T) {
 	t.Run("failed login", func(t *testing.T) {
 		// create server
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(404)
 		}))
 		defer server.Close()

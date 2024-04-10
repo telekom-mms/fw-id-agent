@@ -199,7 +199,7 @@ func TestDBusClientSubscribe(t *testing.T) {
 	dbusConnectSessionBus = func(...dbus.ConnOption) (*dbus.Conn, error) {
 		return nil, nil
 	}
-	dbusConnSignal = func(conn *dbus.Conn, ch chan<- *dbus.Signal) {
+	dbusConnSignal = func(_ *dbus.Conn, ch chan<- *dbus.Signal) {
 		close(ch)
 	}
 
@@ -221,7 +221,7 @@ func TestDBusClientSubscribe(t *testing.T) {
 	}
 
 	// set match signal error
-	dbusConnAddMatchSignal = func(conn *dbus.Conn, options ...dbus.MatchOption) error {
+	dbusConnAddMatchSignal = func(*dbus.Conn, ...dbus.MatchOption) error {
 		return errors.New("test error")
 	}
 
@@ -233,7 +233,7 @@ func TestDBusClientSubscribe(t *testing.T) {
 	}
 
 	// set match signal OK
-	dbusConnAddMatchSignal = func(conn *dbus.Conn, options ...dbus.MatchOption) error {
+	dbusConnAddMatchSignal = func(*dbus.Conn, ...dbus.MatchOption) error {
 		return nil
 	}
 
@@ -277,7 +277,7 @@ func TestDBusClientSubscribe(t *testing.T) {
 			}, []string{}},
 		},
 	}
-	dbusConnSignal = func(conn *dbus.Conn, ch chan<- *dbus.Signal) {
+	dbusConnSignal = func(_ *dbus.Conn, ch chan<- *dbus.Signal) {
 		go func() {
 			for _, s := range signals {
 				ch <- s
@@ -317,7 +317,7 @@ func TestDBusClientReLogin(t *testing.T) {
 
 	// test with no error
 	client := &DBusClient{}
-	relogin = func(d *DBusClient) error {
+	relogin = func(*DBusClient) error {
 		return nil
 	}
 	err := client.ReLogin()
@@ -327,7 +327,7 @@ func TestDBusClientReLogin(t *testing.T) {
 
 	// test with error
 	client = &DBusClient{}
-	relogin = func(d *DBusClient) error {
+	relogin = func(*DBusClient) error {
 		return errors.New("test error")
 	}
 	err = client.ReLogin()
