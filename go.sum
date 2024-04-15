@@ -37,8 +37,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/telekom-mms/tnd v0.3.0 h1:CdYbcBPycv+2ioQWhlIDywHPHwyYYQ7L2moNxZ44WQs=
-github.com/telekom-mms/tnd v0.3.0/go.mod h1:7nZhV5fs1idEzP7bo+K2QDDkUpflvmmnVXzNl5p9Wz0=
+github.com/telekom-mms/tnd v0.4.0 h1:e28F019uwjDJ9QP2HjPUj14lE9I/13gTVrFq+WKGTNE=
+github.com/telekom-mms/tnd v0.4.0/go.mod h1:pQJSxae7frV4Jv+h39N1QHCw5ArU88b+vzo37b4r5fs=
 github.com/vishvananda/netlink v1.1.0 h1:1iyaYNBLmP6L0220aDnYQpo1QEV4t4hJ+xEEhhJH8j0=
 github.com/vishvananda/netlink v1.1.0/go.mod h1:cTgwzPIzzgDAYoQrMm0EdrjRUBkTqKYppBueQtXaqoE=
 github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df/go.mod h1:JP3t17pCcGlemwknint6hfoeCVQrEMVwxRLRjXpq+BU=
