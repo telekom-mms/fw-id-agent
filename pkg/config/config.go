@@ -135,6 +135,12 @@ func (c *Config) JSON() ([]byte, error) {
 	return json.Marshal(c)
 }
 
+// String returns Config as string.
+func (c *Config) String() string {
+	b, _ := c.JSON()
+	return string(b)
+}
+
 // Default returns a new config with default values.
 func Default() *Config {
 	return &Config{

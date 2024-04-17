@@ -123,6 +123,22 @@ func TestConfigValid(t *testing.T) {
 	}
 }
 
+// TestConfigString tests String of Config.
+func TestConfigString(t *testing.T) {
+	// default config
+	c := Default()
+	if c.String() == "" {
+		t.Errorf("string should not be empty: %s", c.String())
+	}
+
+	// nil
+	c = nil
+	if c.String() != "null" {
+		t.Errorf("string should be null: %s", c.String())
+	}
+
+}
+
 // TestDefault tests Default.
 func TestDefault(t *testing.T) {
 	want := &Config{
