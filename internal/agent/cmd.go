@@ -90,6 +90,9 @@ func getConfig(args []string) (*config.Config, error) {
 		return nil, flag.ErrHelp
 	}
 
+	// log version
+	log.WithField("version", Version).Info("Starting Agent")
+
 	// load config or try defaults
 	cfg := config.Default()
 	if flagIsSet(flags, argConfig) {
