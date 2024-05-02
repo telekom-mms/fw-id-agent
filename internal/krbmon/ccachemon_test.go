@@ -50,9 +50,7 @@ func TestGetCredentialCacheFilename(t *testing.T) {
 	}
 
 	// variable not set
-	if err := os.Setenv("KRB5CCNAME", ""); err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("KRB5CCNAME", "")
 	if f, err := getCredentialCacheFilename(); err != nil {
 		t.Error(err)
 	} else if f != "/tmp/krb5cc_1" {
@@ -60,9 +58,7 @@ func TestGetCredentialCacheFilename(t *testing.T) {
 	}
 
 	// variable set, but wrong
-	if err := os.Setenv("KRB5CCNAME", "invalid"); err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("KRB5CCNAME", "invalid")
 	if f, err := getCredentialCacheFilename(); err != nil {
 		t.Error(err)
 	} else if f != "/tmp/krb5cc_1" {
@@ -70,9 +66,7 @@ func TestGetCredentialCacheFilename(t *testing.T) {
 	}
 
 	// variable set
-	if err := os.Setenv("KRB5CCNAME", "FILE:/test/file"); err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("KRB5CCNAME", "FILE:/test/file")
 	if f, err := getCredentialCacheFilename(); err != nil {
 		t.Error(err)
 	} else if f != "/test/file" {
@@ -84,9 +78,7 @@ func TestGetCredentialCacheFilename(t *testing.T) {
 		return nil, errors.New("test error")
 	}
 
-	if err := os.Setenv("KRB5CCNAME", ""); err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("KRB5CCNAME", "")
 	if f, err := (getCredentialCacheFilename()); f != "" && err == nil {
 		t.Error("file should be empty string and error should not be nil")
 	}
