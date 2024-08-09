@@ -186,6 +186,7 @@ func run(args []string) error {
 	// wait for interrupt signal or agent error
 	select {
 	case <-c:
+		log.Info("Agent got interrupt signal")
 	case err = <-a.Errors():
 	}
 
