@@ -425,7 +425,7 @@ func (a *Agent) start() {
 			a.handleSleepEvent(s)
 
 		case <-a.done:
-			log.Debug("Agent stopping")
+			log.Info("Agent stopping")
 			a.stopClient()
 			return
 		}
