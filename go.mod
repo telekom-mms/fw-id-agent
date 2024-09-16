@@ -7,7 +7,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/sirupsen/logrus v1.9.3
-	github.com/telekom-mms/tnd v0.5.0
+	github.com/telekom-mms/tnd v0.5.1
 )
 
 require (
