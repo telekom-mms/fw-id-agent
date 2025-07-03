@@ -493,7 +493,7 @@ func NewAgent(config *config.Config) *Agent {
 	dbus := dbusapi.NewService()
 	ccache := krbmon.NewCCacheMon()
 	krbcfg := krbmon.NewConfMon()
-	tnd := tnd.NewDetector(tnd.NewConfig())
+	tnd := tnd.NewDetector(config.TND.Config)
 	sleep := NewSleepMon()
 	notifier, err := notify.NewNotifier()
 	if err != nil {
