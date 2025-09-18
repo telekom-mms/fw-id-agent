@@ -36,8 +36,7 @@ func (t *TNDConfig) Copy() TNDConfig {
 	cp := TNDConfig{}
 	cp.HTTPSServers = append(t.HTTPSServers[:0:0], t.HTTPSServers...)
 	if t.Config != nil {
-		cp.Config = tnd.NewConfig()
-		*cp.Config = *t.Config
+		cp.Config = t.Config.Copy()
 	}
 	return cp
 }

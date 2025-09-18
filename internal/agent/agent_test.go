@@ -27,7 +27,7 @@ func (n *nopDBusService) SetProperty(string, any)         {}
 // TestAgentSetKerberosTGT tests setKerberosTGT of Agent.
 func TestAgentSetKerberosTGT(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -51,7 +51,7 @@ func TestAgentSetKerberosTGT(t *testing.T) {
 // TestAgentSetTrustedNetwork tests setTrustedNetwork of Agent.
 func TestAgentSetTrustedNetwork(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -87,7 +87,7 @@ func TestAgentSetTrustedNetwork(t *testing.T) {
 // TestAgentSetLoginState tests setLoginState of Agent.
 func TestAgentSetLoginState(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -123,7 +123,7 @@ func TestAgentSetLoginState(t *testing.T) {
 // TestAgentSetLastKeepAlive tests setLastKeepAlive of Agent.
 func TestAgentSetLastKeepAlive(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -147,7 +147,7 @@ func TestAgentSetLastKeepAlive(t *testing.T) {
 // TestInitTND tests initTND of Agent.
 func TestInitTND(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 
 	// no https servers
@@ -175,7 +175,7 @@ func TestInitTND(t *testing.T) {
 // TestAgentStartStopClient tests startClient and stopClient of Agent.
 func TestAgentStartStopClient(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -224,7 +224,7 @@ func TestAgentStartStopClient(t *testing.T) {
 // TestAgentHandleTNDResult tests handleTNDResult of Agent.
 func TestAgentHandleTNDResult(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -244,7 +244,7 @@ func TestAgentHandleTNDResult(t *testing.T) {
 // TestAgentHandleLoginResult tests handleLoginResult of Agent.
 func TestAgentHandleLoginResult(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -264,7 +264,7 @@ func TestAgentHandleLoginResult(t *testing.T) {
 // TestAgentHandleCCacheUpdate tests handleCCacheUpdate of Agent.
 func TestAgentHandleCCacheUpdate(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -307,7 +307,7 @@ func TestAgentHandleCCacheUpdate(t *testing.T) {
 // TestAgentHandleKrbConfUpdate tests handleKrbConfUpdate of Agent.
 func TestAgentHandleKrbConfUpdate(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 	a.client = &client.Client{}
@@ -324,7 +324,7 @@ func TestAgentHandleKrbConfUpdate(t *testing.T) {
 // TestAgentHandleDBusRequest tests handleDBusRequest of Agent.
 func TestAgentHandleDBusRequest(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 
@@ -349,7 +349,7 @@ func TestAgentHandleDBusRequest(t *testing.T) {
 // TrestAgentHandleSleepEvent tests handleSleepEvent of Agent.
 func TestAgentHandleSleepEvent(t *testing.T) {
 	// create agent
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 	a.client = client.NewClient(a.config, nil, nil)
@@ -371,7 +371,7 @@ func TestAgentHandleSleepEvent(t *testing.T) {
 
 // TestAgentStartStop tests Start and Stop of Agent.
 func TestAgentStartStop(t *testing.T) {
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	a.dbus = &nopDBusService{}
 	a.tnd = tndtest.NewDetector()
@@ -383,7 +383,7 @@ func TestAgentStartStop(t *testing.T) {
 
 // TestAgentErrors tests Errors of Agent.
 func TestAgentErrors(t *testing.T) {
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 
 	if a.Errors() == nil || a.Errors() != a.errors {
@@ -393,7 +393,7 @@ func TestAgentErrors(t *testing.T) {
 
 // TestNewAgent tests NewAgent.
 func TestNewAgent(t *testing.T) {
-	c := &config.Config{}
+	c := config.Default()
 	a := NewAgent(c)
 	if a == nil ||
 		a.config == nil ||
