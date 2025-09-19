@@ -59,7 +59,7 @@ nfpms:
       Firewall Identity Agent
       Agent to log on to the corporate firewall.
     license: MIT
-    builds:
+    ids:
       - "fw-id-agent"
       - "fw-id-cli"
     formats:
