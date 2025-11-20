@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/godbus/dbus/v5 v5.1.0
+	github.com/godbus/dbus/v5 v5.2.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/sirupsen/logrus v1.9.3
 	github.com/telekom-mms/tnd v0.7.0
